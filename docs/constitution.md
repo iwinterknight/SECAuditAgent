@@ -201,8 +201,8 @@ not a per-task check.
 
 Cloud LLM API keys and any credentials live in `.env` (gitignored) or are
 injected by the environment — **never committed to a tracked file**. Unlike
-the sibling RFI repo (which carries accepted-risk committed secrets), this
-repo starts clean. A committed secret is a constitution violation, not a
+projects that carry committed secrets as an accepted risk, this repo starts
+clean. A committed secret is a constitution violation, not a
 debt to tolerate. Provide `.env.example` with key *names* only.
 
 ### 5.2 The corpus is public, but the repo stays lean

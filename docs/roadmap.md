@@ -18,7 +18,7 @@ Status legend: `done` · `in-progress` · `planned` · `blocked`.
 
 | # | Module | Layer (`src/`) | Unlocks | Status |
 |---|---|---|---|---|
-| **M0** | Scaffolding & SDD framework | — / `config/` | everything | **in-progress** |
+| **M0** | Scaffolding & SDD framework | — / `config/` | everything | **done** |
 | **M1** | Ingestion & parsing | `ingestion/` | M2, the XBRL store | planned |
 | **M2** | Chunking & enrichment | `chunking/` | M3 | planned |
 | **M3** | Index builders | `index/` | M4, the calc tool | planned |
@@ -35,7 +35,7 @@ The **first evaluated answer** at M7. The **first usable product** at M9.
 
 ---
 
-## M0 — Scaffolding & SDD framework  *(in-progress)*
+## M0 — Scaffolding & SDD framework  *(done)*
 
 **Goal.** Lay the framework, principles, and module roadmap before any
 application code — Spec-Driven from line one.
@@ -46,17 +46,18 @@ application code — Spec-Driven from line one.
 - `docs/constitution.md`, `docs/architecture.md`, `docs/roadmap.md` — **done**
 - `.agent/commands/` (spec, plan, tasks, implement, evaluate) + `.agent/agents/`
   (spec-reviewer, implementer), `.claude/` shims + sdd-feature-cycle skill —
-  **pending (M0 Phase 2)**, adapted for single-repo with the Reporting
-  Protocol baked into implement, and the eval-regression gate baked into
-  evaluate.
-- `src/config/` minimal settings + logging skeleton — **pending** (may land
-  with M1 if M0 stays docs-only).
+  **done**, adapted for single-repo with the Reporting Protocol baked into
+  implement, and the eval-regression gate baked into evaluate.
+- `src/config/` minimal settings + logging skeleton — **deferred to M1**
+  (M0 stayed docs-only; the config skeleton lands with the first ingestion
+  code, per the deliverable list below).
 
 **Spec.** This bootstrap (no dated spec folder; it *is* the framework that
-specs use).
+specs use). Built by root commit `ac23ca5`.
 
 **Dependencies.** None. **Done when.** Phase 2 machinery exists and the
-scaffold walkthrough is delivered (Reporting Protocol).
+scaffold walkthrough is delivered (Reporting Protocol) — both met
+2026-06-04.
 
 ---
 
