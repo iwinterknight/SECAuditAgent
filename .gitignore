@@ -1,0 +1,54 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# --- Secrets & local config ---
+.env
+.env.*
+!.env.example
+
+# --- Vector / structured stores (rebuildable from source) ---
+qdrant_storage/
+chroma/
+.chroma/
+*.duckdb
+*.duckdb.wal
+
+# --- Derived corpus artifacts (rebuilt by the ingestion pipeline) ---
+# NOTE: raw 10-K PDFs under data/SEC/ are versioned via Git LFS — do NOT ignore them.
+data/derived/
+data/parsed/
+data/index/
+
+# --- Evaluation transient outputs (keep committed baselines under eval/baselines/) ---
+eval/runs/
+eval/_tmp/
+
+# --- Observability local data ---
+.phoenix/
+langfuse_data/
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Frontend (added in M9) ---
+node_modules/
+ui/dist/
+
+# --- OS / IDE ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
