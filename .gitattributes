@@ -1,1 +1,6 @@
 *.pdf filter=lfs diff=lfs merge=lfs -text
+
+# XBRL filing packages: large inline-XBRL HTML instances + linkbases (source
+# corpus, vendored from EDGAR). Path-scoped (the dir segment has no space, so
+# .gitattributes parses it cleanly). See data/SEC/10-K Filings/xbrl/.
+**/xbrl/** filter=lfs diff=lfs merge=lfs -text
