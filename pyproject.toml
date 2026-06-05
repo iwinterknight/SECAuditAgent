@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "auditagent"
+version = "0.1.0"
+description = "Agentic RAG over JPMorgan Chase 10-K filings; M1 ingestion & parsing."
+requires-python = ">=3.13"
+authors = [{ name = "Sunit Singh", email = "sunitsingh.bitsg@gmail.com" }]
+dependencies = [
+    # Numeric path: the reference iXBRL processor (scale/sign/transform +
+    # context/unit/dimension resolution). Pinned — its transform registry is
+    # determinism-load-bearing for the byte-identical rebuild (plan Risks (b)).
+    "arelle-release==2.41.4",
+    # Narrative path: structured PDF parse with table-cell fidelity. Pinned —
+    # its layout/table model output feeds the same rebuild guarantee.
+    "docling==2.97.0",
+    # Typed, validated contracts (config.schema) and the single settings object.
+    "pydantic>=2",
+    "pydantic-settings",
+]
+
+[dependency-groups]
+dev = ["pytest"]
+
+# src-layout: packages live under src/ and install as top-level `config` /
+# `ingestion`, so imports stay clean and tests run against the installed package
+# (not an accidental cwd import).
+[tool.hatch.build.targets.wheel]
+packages = ["src/config", "src/ingestion"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: re-parses the corpus end-to-end; deselected from the default per-implement run (run with -m slow)",
+]

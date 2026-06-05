@@ -1,7 +1,7 @@
 ---
 id: 2026-06-04-ingestion-parsing
 title: M1 — Ingestion & parsing (Elements + XBRLFacts from the JPM 10-Ks)
-status: tasks
+status: implement
 module: ingestion
 owner: Sunit (sunitsingh.bitsg@gmail.com)
 created: 2026-06-04

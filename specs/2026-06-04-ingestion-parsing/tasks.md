@@ -18,7 +18,7 @@ cadence.
 
 ## Tasks
 
-- [ ] **T1. Bootstrap packaging + repo skeleton.**
+- [x] **T1. Bootstrap packaging + repo skeleton.**
       Files: `pyproject.toml`, `uv.lock`, `src/config/__init__.py`,
       `src/ingestion/__init__.py`, `tests/conftest.py`,
       `tests/unit/test_packaging.py`
@@ -33,6 +33,10 @@ cadence.
       (doc-tooling) stays separate — do **not** fold it in. The three precedent-
       setting forks (Arelle, Docling, hatchling+uv) are lead-confirmed before
       this lands.
+      done 2026-06-05: src-layout editable install resolves `import config` /
+      `import ingestion`; `slow` marker registered; 131-pkg `uv.lock` committed.
+      Acceptance `test_packaging.py::test_config_and_ingestion_importable` green
+      (2/2).
 
 - [ ] **T2. `config/` schema — the typed contracts.**
       Files: `src/config/schema.py`, `tests/unit/test_contracts_location.py`
