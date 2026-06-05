@@ -13,7 +13,15 @@ expensive parse runs once (T4, T6).
 
 import pytest
 
+from config.schema import XBRLFact
 from config.settings import Filing, Settings, get_settings
+from ingestion.xbrl import extract_facts
+
+# The FY2022 filing — its FY2022 figures are reported a second time, restated, as
+# comparatives in the FY2024 filing. Paired with the FY2024 facts to prove the
+# extractor keeps both (no cross-filing dedup); named here so the accession lives
+# in one place.
+_FY2022_ACCESSION = "0000019617-23-000231"
 
 
 @pytest.fixture(scope="session")
@@ -34,3 +42,43 @@ def sample_filing(settings: Settings) -> Filing:
     routes through the same ``filing_for`` lookup the pipeline uses.
     """
     return settings.filing_for("0000019617-25-000270")
+
+
+@pytest.fixture(scope="session")
+def xbrl_facts(settings: Settings, sample_filing: Filing) -> list[XBRLFact]:
+    """The FY2024 filing parsed once into ``XBRLFact``s — the shared corpus for
+    the extraction tests. Parsing an iXBRL instance is multi-second, so it runs a
+    single time per session and every fact-shape test reads this list.
+    """
+    accession_dir = settings.xbrl_dir / sample_filing.accession
+    return extract_facts(accession_dir, source_filing=sample_filing.accession)
+
+
+@pytest.fixture(scope="session")
+def fy2022_facts(settings: Settings) -> list[XBRLFact]:
+    """The FY2022 filing parsed once — paired with :func:`xbrl_facts` (FY2024) so
+    the restatement test can show a prior-year figure survives from *both*
+    filings, distinguished only by ``source_filing``.
+    """
+    accession_dir = settings.xbrl_dir / _FY2022_ACCESSION
+    return extract_facts(accession_dir, source_filing=_FY2022_ACCESSION)
+
+
+@pytest.fixture(scope="session")
+def nil_numeric_concepts(settings: Settings, sample_filing: Filing) -> set[str]:
+    """The concepts the FY2024 instance tags as *nil* numeric facts, read straight
+    from Arelle.
+
+    This is the independent ground truth ``extract_facts`` must skip: sourcing the
+    nil set directly from the model (not from the extractor's own output) keeps the
+    nil test from grading the extractor against itself.
+    """
+    from arelle import Cntlr
+
+    instance = settings.xbrl_instance_path(sample_filing)
+    cntlr = Cntlr.Cntlr(logFileName="logToBuffer")
+    model = cntlr.modelManager.load(str(instance))
+    try:
+        return {str(fact.qname) for fact in model.facts if fact.isNumeric and fact.isNil}
+    finally:
+        model.close()

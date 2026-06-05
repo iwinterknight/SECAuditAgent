@@ -79,7 +79,7 @@ cadence.
       2 companions (singleton, accession_to_fy consistency) green (3/3; full unit
       suite 7/7).
 
-- [ ] **T4. XBRL extractor — Arelle → `XBRLFact`s.**
+- [x] **T4. XBRL extractor — Arelle → `XBRLFact`s.**
       Files: `src/ingestion/xbrl.py`, `tests/conftest.py`,
       `tests/unit/test_xbrl_extract.py`, `tests/unit/test_entity_period.py`
       Acceptance: `tests/unit/test_xbrl_extract.py` (`test_fact_fields_present`,
@@ -96,6 +96,19 @@ cadence.
       adds a session-scoped facts fixture (parse one accession once; the
       restatement test parses the 2022 + 2024 instances).
       Depends-on: T3 (paths), T2 (`XBRLFact`)
+      done 2026-06-05: `extract_facts(accession_dir, *, source_filing)` is the
+      sole `XBRLFact` producer — Arelle loads instance+linkbases and applies the
+      iXBRL scale/sign/transform, then we resolve entity (dei:LegalEntityAxis
+      member → consolidated/bank-N.A., axis projected out of `dimensions`),
+      period (instant/duration with the end-exclusive -1-day correction), unit,
+      `decimals`, and remaining dimensions (lossless). Nil / unparseable /
+      forever-period facts are skipped + logged, never coerced to 0; duplicate
+      iXBRL taggings collapse per `fact_id` keeping the most-precise (inconsistent
+      duplicates logged). Restatements retained across filings (dedup within a
+      filing only). All 7 acceptance tests green (4 in `test_xbrl_extract.py` + 3
+      in `test_entity_period.py`); full unit suite 14/14. No linters/hooks
+      configured. Carried to T10: Arelle taxonomy cache must be pre-populated for
+      the "no network fetch" guarantee.
 
 - [ ] **T5. Anchor numeric truth — the cheap-eval gate (seeds M7).**
       Files: `tests/unit/test_xbrl_anchors.py`
