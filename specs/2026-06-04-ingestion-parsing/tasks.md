@@ -38,7 +38,7 @@ cadence.
       Acceptance `test_packaging.py::test_config_and_ingestion_importable` green
       (2/2).
 
-- [ ] **T2. `config/` schema — the typed contracts.**
+- [x] **T2. `config/` schema — the typed contracts.**
       Files: `src/config/schema.py`, `tests/unit/test_contracts_location.py`
       Acceptance: `tests/unit/test_contracts_location.py::test_types_defined_in_config`
       passes — `Element`, `XBRLFact`, `ElementKind`, `PeriodType`, `Entity`
@@ -48,6 +48,11 @@ cadence.
       ⇒ only `period_instant`; `duration` ⇒ only `period_start`/`period_end`).
       `Entity` enum = `JPMC_CONSOLIDATED` | `JPMORGAN_CHASE_BANK_NA`.
       Depends-on: T1
+      done 2026-06-05: `Element`/`XBRLFact` + `ElementKind`/`PeriodType`/`Entity`
+      defined in `config.schema` (Pydantic v2, `value: Decimal`); period-
+      exclusivity model validator rejects instant/duration blends at
+      construction. Acceptance `test_contracts_location.py::test_types_defined_in_config`
+      green; validator companion test green (2/2).
 
 - [ ] **T3. `config/` settings + logging.**
       Files: `src/config/settings.py`, `src/config/logging.py`,
