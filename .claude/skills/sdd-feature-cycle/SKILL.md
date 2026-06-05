@@ -1,6 +1,6 @@
 ---
 name: sdd-feature-cycle
-description: Drives the four-stage Spec-Driven Development loop (CLARIFY → PLAN → IMPLEMENT → EVALUATE) for the AuditAgent project. Auto-loads whenever the user describes a feature to develop, a non-trivial bug to fix, or any change requiring design judgment ("add X", "build Y", "implement Z", "change how W works", "we need to support V"). Routes to the right slash command at each stage, dispatches the spec-reviewer and implementer sub-agents at the right gates, enforces the Reporting Protocol (a Code Walkthrough after every /implement) and the eval-regression gate, and enforces stage transitions so the user cannot accidentally skip CLARIFY into IMPLEMENT. Skip this skill for purely informational questions ("what does this code do?"), trivial fixes (typos, comments, dependency-pin bumps), or explicit slash-command invocations.
+description: Drives the four-stage Spec-Driven Development loop (CLARIFY → PLAN → IMPLEMENT → EVALUATE) for the AuditAgent project. Auto-loads whenever the user describes a feature to develop, a non-trivial bug to fix, or any change requiring design judgment ("add X", "build Y", "implement Z", "change how W works", "we need to support V"). Routes to the right slash command at each stage, dispatches the spec-reviewer and implementer sub-agents at the right gates, enforces the Reporting Protocol (an Educator Report after every SDD step, with the two-level Code Walkthrough at IMPLEMENT) and the eval-regression gate, and enforces stage transitions so the user cannot accidentally skip CLARIFY into IMPLEMENT. Skip this skill for purely informational questions ("what does this code do?"), trivial fixes (typos, comments, dependency-pin bumps), or explicit slash-command invocations.
 ---
 
 # sdd-feature-cycle
@@ -34,11 +34,17 @@ there is no parent/child split and no `/sync` changelog tooling.
 
 | Stage | Slash command | Artifact produced | Sub-agent dispatched |
 |---|---|---|---|
-| CLARIFY | `/spec` | `specs/<dated-slug>/spec.md` | `spec-reviewer` (optional, on user request) |
-| PLAN | `/plan` | `specs/<dated-slug>/plan.md` + spec status bump | `spec-reviewer` (auto) |
-| TASKS | `/tasks` | `specs/<dated-slug>/tasks.md` + spec status bump | none |
-| IMPLEMENT | `/implement T<N>` | code in `src/` + `tasks.md` + `spec.md`, one atomic commit, **Code Walkthrough** | `implementer` (per task) |
-| EVALUATE | `/evaluate` | `specs/<dated-slug>/evaluate.md` + spec status bump to `done` on PASS | none |
+| CLARIFY | `/spec` | `specs/<dated-slug>/spec.md` + `reports/<dated-slug>/01-clarify.md` | `spec-reviewer` (optional, on user request) |
+| PLAN | `/plan` | `specs/<dated-slug>/plan.md` + spec status bump + `reports/<dated-slug>/02-plan.md` | `spec-reviewer` (auto) |
+| TASKS | `/tasks` | `specs/<dated-slug>/tasks.md` + spec status bump + `reports/<dated-slug>/03-tasks.md` | none |
+| IMPLEMENT | `/implement T<N>` | code in `src/` + `tasks.md` + `spec.md` + `reports/<dated-slug>/04-implement-T<N>.md`, one atomic commit, **Code Walkthrough** | `implementer` (per task) |
+| EVALUATE | `/evaluate` | `specs/<dated-slug>/evaluate.md` + spec status bump to `done` on PASS + `reports/<dated-slug>/05-evaluate.md` | none |
+
+Every stage additionally emits its **Educator Report** under
+`reports/<dated-slug>/` — Markdown is the committed source of truth, the PDF
+is rendered by `reports/render.py` and gitignored — produced *before* the
+next stage. The report runs high → low and teaches the domain; at IMPLEMENT
+its core is the two-level Code Walkthrough. See Constitution §2.
 
 ## Hard rules (non-negotiable)
 
@@ -52,9 +58,12 @@ there is no parent/child split and no `/sync` changelog tooling.
 4. **Do not start a second IMPLEMENT task in the same invocation.** One
    task per `/implement` invocation. The user invokes `/implement T<N+1>`
    to advance.
-5. **Every `/implement` ends with a Code Walkthrough** (Reporting
-   Protocol, Constitution §2). A task whose code shipped without the
-   module-then-file walkthrough is NOT done — do not advance past it.
+5. **Every SDD step ends with an Educator Report** (Reporting Protocol,
+   Constitution §2), produced before the next step. Each report runs
+   high → low and teaches the domain; the IMPLEMENT report's core is the
+   two-level module-then-file Code Walkthrough, delivered inline as well.
+   A step whose work shipped without its report under `reports/<slug>/` is
+   NOT done — do not advance past it.
 6. **The eval-regression gate is mandatory for retrieval/agent/chunking
    changes.** Per `/implement` the cheap deterministic eval tier runs;
    at EVALUATE the full golden-set must show no regression vs the
@@ -126,7 +135,11 @@ there is no parent/child split and no `/sync` changelog tooling.
 5. **Optional:** ask the user "want me to dispatch the spec-reviewer on
    this before you read it?" If yes, dispatch and surface the findings.
    Otherwise wait for the user to read.
-6. **Wait for explicit user confirmation** before advancing.
+6. **Produce the Educator Report** `reports/<slug>/01-clarify.md` from
+   `templates/report-template.md` (orientation → domain teaching →
+   architecture → AC drill-down → trade-offs) and render it to PDF via
+   `reports/render.py`. The step is not done without it.
+7. **Wait for explicit user confirmation** before advancing.
 
 ### Stage 2 — PLAN (`/plan`)
 
@@ -141,7 +154,10 @@ there is no parent/child split and no `/sync` changelog tooling.
 5. Surface the plan path, a brief Approach summary, the count of Risks,
    any new dependencies named, any golden-set entries called for, and
    the reviewer's findings inline.
-6. **Wait for the user to address reviewer findings and confirm.**
+6. **Produce the Educator Report** `reports/<slug>/02-plan.md` (walk the
+   approach, every rejected alternative + reason, the Risks/tensions, the
+   cheap vs heavy test tiers) and render it to PDF.
+7. **Wait for the user to address reviewer findings and confirm.**
 
 ### Stage 3 — TASKS (`/tasks`)
 
@@ -154,7 +170,10 @@ there is no parent/child split and no `/sync` changelog tooling.
 5. Flag any borderline-large task, weak acceptance check, or
    retrieval/agent/chunking task missing its cheap-eval check or
    golden-set entry.
-6. **Wait for confirmation** before any task is implemented.
+6. **Produce the Educator Report** `reports/<slug>/03-tasks.md` (the
+   decomposition logic — why these boundaries, the ordering/dependencies,
+   what each acceptance check proves) and render it to PDF.
+7. **Wait for confirmation** before any task is implemented.
 
 ### Stage 4 — IMPLEMENT (`/implement T<N>`, repeated)
 
@@ -164,10 +183,12 @@ there is no parent/child split and no `/sync` changelog tooling.
      sub-agent per `.agent/agents/implementer.md`).
    - The implementer makes the change in `src/`, runs the named
      acceptance check (plus the cheap deterministic eval tier when
-     chunking/retrieval/agent/tools are touched), **delivers the
-     two-level Code Walkthrough**, proposes a commit message ending in
-     `Spec: <id>`, waits for the user's "commit" approval, and makes ONE
-     atomic commit (code + `tasks.md` + `spec.md`).
+     chunking/retrieval/agent/tools are touched), writes the task's
+     Educator Report `reports/<slug>/04-implement-T<N>.md` and **delivers
+     its two-level Code Walkthrough core inline**, proposes a commit
+     message ending in `Spec: <id>`, waits for the user's "commit"
+     approval, and makes ONE atomic commit (code + `tasks.md` + `spec.md`
+     + the report `.md`).
    - The implementer STOPS. The skill does NOT auto-advance to the next
      task. The user invokes `/implement T<N+1>` when ready.
 3. When `/implement` reports a failure, the implementer leaves the task
@@ -188,11 +209,15 @@ there is no parent/child split and no `/sync` changelog tooling.
    Next-engineer pass — and writes `specs/<slug>/evaluate.md` with
    per-item PASS / FAIL / N/A and evidence.
 4. Surface the EVALUATE record's outcome and the per-section results.
-5. **On PASS:** `/evaluate` bumps `spec.md` status to `done` and appends
+5. **Produce the Educator Report** `reports/<slug>/05-evaluate.md` (what
+   was verified and why each gate exists; the eval-regression gate vs the
+   committed baseline; what the results prove — on FAIL, what they
+   revealed) and render it to PDF. Produced on PASS or FAIL.
+6. **On PASS:** `/evaluate` bumps `spec.md` status to `done` and appends
    a `closed: <YYYY-MM-DD>` line. If a module completed, confirm its
    `roadmap.md` row is flipped to `done`. Confirm with the user; the
    loop ends.
-6. **On FAIL:** STOP. Surface the failed items with one-line reasons and
+7. **On FAIL:** STOP. Surface the failed items with one-line reasons and
    present the four loop-back options (per hard rule #8 and
    `references/evaluate-checklist.md` "On failure" section):
    1. Refine implementation (back to IMPLEMENT)
@@ -208,7 +233,8 @@ there is no parent/child split and no `/sync` changelog tooling.
 - It does not commit on the user's behalf — the implementer commits one
   task at a time after user approval.
 - It does not push. Pushing is always the user's job.
-- It does not let a task advance without its Code Walkthrough (§2).
+- It does not let any step advance without its Educator Report (§2); the
+  IMPLEMENT report must contain the two-level Code Walkthrough.
 - It does not edit `docs/` directly — `architecture.md`,
   `constitution.md`, and `roadmap.md` changes go through EVALUATE or
   their own spec.
@@ -226,6 +252,7 @@ there is no parent/child split and no `/sync` changelog tooling.
 | Module tracker (M0–M10) | `docs/roadmap.md` |
 | Templates for new artifacts | `.claude/skills/sdd-feature-cycle/templates/` |
 | Stage-specific checklists | `.claude/skills/sdd-feature-cycle/references/` |
+| The Educator Report shape + renderer | `templates/report-template.md`, `reports/render.py`, `reports/README.md` |
 
 ## Quick failure mode self-checks
 
@@ -239,7 +266,8 @@ ways a skill-driven SDD loop goes wrong:
 | Retrieval/agent change with no golden-set entry named | §4.4 gap | Re-run /plan or /tasks to add it |
 | Tasks all touch the same file | Tasks were not split by concern | Re-run /tasks |
 | First /implement touches files outside its `Files:` list | Task is wrong, or implementer is misbehaving | STOP, surface, ask user |
-| /implement finished but no Code Walkthrough was delivered | Reporting Protocol skipped (§2) | Not done — require the walkthrough |
+| A stage finished but no Educator Report was produced under `reports/<slug>/` | Reporting Protocol skipped (§2) | Not done — produce + render the report before advancing |
+| /implement finished but no Code Walkthrough in the report or inline | §2 walkthrough core missing | Not done — require the module-then-file walkthrough |
 | A numeric answer sourced from a parsed table, not XBRL | §1.2 violation | STOP, route through the calc tool |
 | Agent change that lets the LLM skip the validator | §1.4 violation | STOP, that's a constitution-level change |
 | About to mark spec done but EVALUATE wasn't run | You're shortcutting | Run EVALUATE |

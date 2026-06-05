@@ -180,6 +180,26 @@ touch. This is preliminary; tasks.md will refine it.
 - No git commits — the user commits on their own cadence.
 - No interaction with `src/` git state — only reads files for context.
 
+## Educator Report (Reporting Protocol — Constitution §2)
+
+Before you tell the user PLAN is complete, produce this step's **Educator
+Report** — mandatory (Constitution §2). A `plan.md` without its report is
+not done.
+
+- **File:** `reports/<YYYY-MM-DD-slug>/02-plan.md`, authored from
+  `.claude/skills/sdd-feature-cycle/templates/report-template.md`. Render to
+  a sibling PDF with `python reports/render.py reports/<slug>/02-plan.md`.
+  Markdown committed; PDF rebuildable and gitignored.
+- **Voice:** educator. High → low; teach, don't summarize.
+- **PLAN focus:** walk the Approach paragraph by paragraph; for **every
+  fork**, name the alternative considered and the one-line reason it lost
+  (e.g. parser Docling vs Unstructured; a package or framework choice and
+  what it buys over the alternative); teach any new domain concept the
+  approach introduces; explain the constitution tensions in Risks and how
+  each is mitigated; explain the Test Strategy — the cheap deterministic
+  tier that runs per implement vs the heavy tier queued for the gate, and
+  why that split exists. Reflect the `spec-reviewer` findings.
+
 ## End-of-stage rules
 
 When `plan.md` is written:
@@ -192,9 +212,11 @@ When `plan.md` is written:
    findings inline (Ambiguities, Missing Acceptance Criteria,
    Constitution Tensions, Suggestions). The reviewer does not edit —
    it only critiques.
-4. Tell the user the next step is `/tasks` and that you will NOT
+4. **Produce the Educator Report** `reports/<slug>/02-plan.md` (see above,
+   reflecting the reviewer's findings) and render it to PDF.
+5. Tell the user the next step is `/tasks` and that you will NOT
    invoke it.
-5. Stop.
+6. Stop.
 
 A plan exits PLAN (status `plan` → `tasks`) only when:
 

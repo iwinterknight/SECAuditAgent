@@ -147,6 +147,25 @@ Before finalizing, walk the list and ask:
 - No git commits.
 - No interaction with `src/` git state — only reads files.
 
+## Educator Report (Reporting Protocol — Constitution §2)
+
+Before you tell the user TASKS is complete, produce this step's **Educator
+Report** — mandatory (Constitution §2). A `tasks.md` without its report is
+not done.
+
+- **File:** `reports/<YYYY-MM-DD-slug>/03-tasks.md`, authored from
+  `.claude/skills/sdd-feature-cycle/templates/report-template.md`. Render to
+  a sibling PDF with `python reports/render.py reports/<slug>/03-tasks.md`.
+  Markdown committed; PDF rebuildable and gitignored.
+- **Voice:** educator. High → low; teach, don't summarize.
+- **TASKS focus:** explain the **decomposition logic** — why these task
+  boundaries (one concern each), how the ordering and `Depends-on:` edges
+  fall out of the plan's Sequencing, and what each task's single acceptance
+  check decisively proves. Teach why the cheap-eval check / golden-set entry
+  rides *with* the behavior task it proves (§4.4) rather than being a
+  separate task. The reader should finish able to defend the shape of the
+  task list, not just read it.
+
 ## End-of-stage rules
 
 When `tasks.md` is written:
@@ -154,9 +173,11 @@ When `tasks.md` is written:
 1. Show the user the task list with task IDs and one-line summaries.
 2. Flag any task that's borderline-large or whose acceptance check is
    weak.
-3. Tell the user the next step is `/implement T1` (or whichever task
+3. **Produce the Educator Report** `reports/<slug>/03-tasks.md` (see above)
+   and render it to PDF.
+4. Tell the user the next step is `/implement T1` (or whichever task
    ID is first) and that you will NOT auto-invoke it.
-4. Stop.
+5. Stop.
 
 Status bumps from `tasks` to `implement` happen on the FIRST
 `/implement` invocation, not now.

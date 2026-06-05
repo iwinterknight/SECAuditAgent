@@ -120,11 +120,37 @@ under gitignored paths; they are never the source of truth.
 
 ## 2. The Reporting Protocol
 
-**Every completed `/implement` task ends with a Code Walkthrough.** This is a
-hard requirement unique to this project, encoding the lead's need for
-complete fluency.
+> *Amended 2026-06-04 (lead-directed framework change, wired directly like
+> the M0 scaffolding rather than through a separate spec). The Reporting
+> Protocol is broadened from a single per-`/implement` Code Walkthrough to
+> an **Educator Report after every SDD step**. The two-level Code
+> Walkthrough is preserved intact as the IMPLEMENT report's drill-down core,
+> so nothing the prior protocol guaranteed is lost.*
 
-The walkthrough has two granularities:
+**Every SDD step ends with an Educator Report, produced before the next
+step begins.** This is a hard requirement unique to this project, encoding
+the lead's need for a complete, ground-up **360° understanding** of the
+system — enough to present and defend it at any altitude, from architecture
+down to a single line of code.
+
+After each of CLARIFY, PLAN, TASKS, IMPLEMENT, and EVALUATE, produce a
+report that:
+
+1. **Starts high and drills low.** It opens at the architecture / domain
+   level — where this step's work sits in the system and *why* — and drills
+   down to the specific files and what the code in them does.
+2. **Teaches the domain.** It defines and motivates the terminology and the
+   decisions, not just what changed: XBRL and iXBRL, EDGAR and its pull
+   mechanism, the DuckDB-vs-Qdrant split, framework and package choices, and
+   the RAG / agent design nuances the step touched. A reader finishes the
+   report *fluent* in the concepts, not merely informed of the diff.
+3. **Surfaces trade-offs.** Every fork the step took — and the alternative
+   it rejected — is named with one-line reasoning, so the design is
+   defensible, not just stated.
+4. **Stays readable.** High-to-low, jargon-defined, presentable top-down.
+
+**The IMPLEMENT report contains the two-level Code Walkthrough** the prior
+protocol mandated, unchanged:
 
 1. **Module level** — which module the task belongs to, its role in the
    architecture and data flow, and what changed at the module boundary
@@ -132,9 +158,18 @@ The walkthrough has two granularities:
 2. **File level** — each file and function touched: what it does and *why*
    it exists, in language the lead can re-present top-down to line level.
 
-A task whose code is written but whose walkthrough is missing is **not
-done**. The walkthrough is delivered in the `/implement` response and its
-substance is captured in the spec's `evaluate.md` when the spec closes.
+**Artifact mechanics.** Each report is authored in Markdown — the committed
+source of truth — under `reports/<spec-slug>/NN-<stage>.md` (`01-clarify`,
+`02-plan`, `03-tasks`, `04-implement-T<N>` one per task, `05-evaluate`) and
+rendered to a sibling `.pdf` (rebuildable, therefore gitignored) by the
+pure-Python renderer at `reports/render.py`.
+
+**Done conditions.** A step whose work is complete but whose Educator Report
+is missing is **not done**. For IMPLEMENT specifically, a task whose code is
+written but whose Code Walkthrough (the report's drill-down core) is missing
+is not done. The walkthrough is delivered inline in the `/implement`
+response *and* captured in its report; its substance is folded into the
+spec's `evaluate.md` when the spec closes.
 
 ---
 
@@ -241,7 +276,9 @@ A change is "done" when ALL of:
    (§4.2).
 4. **Constitution principles upheld.** Tensions are listed in `plan.md`
    Risks. New violations become amendments, not silent debt.
-5. **The Code Walkthrough was delivered** (§2) for every implemented task.
+5. **The Reporting Protocol was honored** (§2): the two-level Code
+   Walkthrough was delivered for every implemented task, and the per-step
+   Educator Reports exist under `reports/<slug>/`.
 6. **`Spec: <id>` footer** on every commit produced for this spec.
 7. **Architecture or constitution updated** if behavior or a principle
    changed. The summary says explicitly which docs changed.

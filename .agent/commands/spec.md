@@ -149,14 +149,38 @@ figure."
 - No git commits. The user reviews and commits the spec themselves.
 - No interaction with `src/` git state.
 
+## Educator Report (Reporting Protocol — Constitution §2)
+
+Before you tell the user CLARIFY is complete, produce this step's **Educator
+Report**. It is mandatory, not a nicety (Constitution §2): a `spec.md`
+without its report is not done.
+
+- **File:** `reports/<YYYY-MM-DD-slug>/01-clarify.md`, authored from
+  `.claude/skills/sdd-feature-cycle/templates/report-template.md`. Render to
+  a sibling PDF with `python reports/render.py
+  reports/<slug>/01-clarify.md`. Markdown is the committed source of truth;
+  the PDF is rebuildable and gitignored.
+- **Voice:** educator. Open at the architecture / domain level and drill
+  down to specifics; *teach* the domain rather than summarize the diff.
+- **CLARIFY focus:** motivate the problem in the system's terms; teach the
+  domain concepts the spec leans on (for an ingestion spec: XBRL, inline
+  XBRL and its linkbases, EDGAR and its pull mechanism, accession numbers,
+  entity/period fidelity, and the DuckDB-vs-Qdrant split — why numbers come
+  from XBRL, not LLM transcription); walk each acceptance criterion with WHY
+  it matters and what failure it prevents; explain what is deliberately out
+  of scope and why. Surface the trade-off behind every choice the spec
+  ratified.
+
 ## End-of-stage rules
 
 When the spec file is written:
 
 1. Show the user the file path and a one-paragraph summary of what's in it.
 2. List unresolved Open Questions.
-3. Tell the user the next step is `/plan` and that you will NOT invoke it.
-4. Stop.
+3. **Produce the Educator Report** `reports/<slug>/01-clarify.md` (see
+   above) and render it to PDF.
+4. Tell the user the next step is `/plan` and that you will NOT invoke it.
+5. Stop.
 
 A spec exits CLARIFY (status changes from `clarify` → `plan`) only when:
 

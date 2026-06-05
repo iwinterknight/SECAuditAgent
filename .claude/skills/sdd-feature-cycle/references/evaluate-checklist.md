@@ -18,7 +18,7 @@ This checklist maps to the eight Definition-of-Done items:
 | 2. all tasks checked | Section G |
 | 3. feature tests pass AND (retrieval/agent) eval no-regression | Sections B, C |
 | 4. constitution upheld | Section D |
-| 5. Code Walkthrough delivered for every task | Section F |
+| 5. Reporting Protocol: walkthroughs + per-step Educator Reports | Section F |
 | 6. `Spec: <id>` footer on every commit | Section D (footer audit) |
 | 7. architecture/constitution updated if changed | Section E |
 | 8. next-engineer test | Section H |
@@ -184,8 +184,13 @@ The project's defining requirement. Answer honestly:
         (inputs/outputs/contracts/dependencies, referencing §5).
       - **File level** — each file and function touched: what it does and
         WHY it exists, in language the lead can re-present top-down.
+- [ ] **F.3** — The per-step **Educator Reports** exist under
+      `reports/<slug>/`: `01-clarify`, `02-plan`, `03-tasks`, one
+      `04-implement-T<N>` per task, and `05-evaluate`. Markdown is the
+      committed source of truth; the rendered PDFs are gitignored.
 
-A spec whose tasks shipped without walkthroughs is NOT done.
+A spec whose tasks shipped without walkthroughs — or whose per-step
+Educator Reports are missing — is NOT done.
 
 ---
 

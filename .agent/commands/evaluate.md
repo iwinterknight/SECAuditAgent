@@ -134,6 +134,7 @@ footer audit, which is always run)
 |---|---|---|---|
 | F.1 | A Code Walkthrough was delivered for EVERY implemented task | PASS / FAIL | <which tasks> |
 | F.2 | Walkthrough substance captured here (module-then-file) | PASS / FAIL | <summary below> |
+| F.3 | Per-step Educator Reports exist under `reports/<slug>/` (01-clarify, 02-plan, 03-tasks, 04-implement-T*, 05-evaluate) | PASS / FAIL | <which present> |
 
 (Capture the module-then-file walkthrough substance for the spec as a
 whole, so this record is the durable artifact of what was built and why.)
@@ -241,10 +242,36 @@ The user picks ONE of:
 - **Committing.** Writes `specs/<slug>/evaluate.md` and updates the spec
   frontmatter — both uncommitted. The user commits on their own cadence.
 
+## Educator Report (Reporting Protocol — Constitution §2)
+
+After the EVALUATE record is written — on PASS **or** FAIL — produce this
+step's **Educator Report** (mandatory, Constitution §2). It documents the
+evaluation either way.
+
+- **File:** `reports/<YYYY-MM-DD-slug>/05-evaluate.md`, authored from
+  `.claude/skills/sdd-feature-cycle/templates/report-template.md`. Render to
+  a sibling PDF with `python reports/render.py reports/<slug>/05-evaluate.md`.
+  Markdown committed (uncommitted by this command, like `evaluate.md`
+  itself — the user commits on their cadence); PDF rebuildable and
+  gitignored.
+- **Voice:** educator. High → low; teach, don't summarize.
+- **EVALUATE focus:** explain *what* was verified and *why each gate
+  exists* — the acceptance criteria and the evidence for each, the cheap
+  deterministic eval tier vs the eval-regression gate against the committed
+  baseline (and what "no regression" actually protects), the constitution
+  principles checked, and what the results prove (or, on FAIL, what they
+  revealed and which loop-back the failure implies). This report is the
+  durable, teachable record of how we *knew* the spec was done.
+
+The report's Section F (Reporting Protocol) verifies that the full set of
+per-step reports exists — so producing `05-evaluate.md` here completes the
+arc it audits.
+
 ## Version control interaction
 
 - Read-only on `src/`. The audit uses `git log` only.
-- Writes `evaluate.md` and updates `spec.md` frontmatter. No commits.
+- Writes `evaluate.md`, the `05-evaluate.md` Educator Report, and updates
+  `spec.md` frontmatter. No commits.
 - Does NOT push, merge, branch, or otherwise mutate refs.
 
 ## End-of-stage rules
@@ -253,8 +280,10 @@ When the EVALUATE record is written:
 
 1. Show the user the file path.
 2. Surface the per-section result and the overall outcome.
-3. On PASS: confirm status bump to `done`; if a module completed, confirm
+3. **Produce the Educator Report** `reports/<slug>/05-evaluate.md` (see
+   above) and render it to PDF.
+4. On PASS: confirm status bump to `done`; if a module completed, confirm
    the `roadmap.md` row is flipped to `done`.
-4. On FAIL: list each failed item with one-line reason, then present the
+5. On FAIL: list each failed item with one-line reason, then present the
    four options and ASK the user to pick.
-5. STOP. Do not auto-loop to PLAN or anywhere else.
+6. STOP. Do not auto-loop to PLAN or anywhere else.

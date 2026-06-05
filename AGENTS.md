@@ -20,8 +20,10 @@ deployment come last, after the core modules work.
 
 This project is run with the same Spec-Driven Development (SDD) discipline
 as the sibling RFI project, with one project-specific addition: a
-**Reporting Protocol** (see below) that produces a module-then-file code
-walkthrough after every implemented task.
+**Reporting Protocol** (see below) that produces an educator-style report
+after every SDD step — high-level down to the code, teaching the domain —
+with the two-level module-then-file code walkthrough as the IMPLEMENT
+report's core.
 
 ---
 
@@ -84,6 +86,10 @@ AuditAgent/
 │   ├── commands/          ← spec, plan, tasks, implement, evaluate
 │   └── agents/            ← spec-reviewer, implementer
 ├── .claude/               ← Claude Code wiring (thin shims → .agent/)
+│
+├── reports/               ← Educator Reports (one per SDD step)
+│   ├── render.py          ← Markdown → PDF renderer (tooling, not app code)
+│   └── <slug>/NN-stage.md ← 01-clarify … 05-evaluate (.md committed, .pdf rendered)
 │
 ├── data/
 │   └── SEC/10-K Filings/yearly/   ← raw PDFs (Git LFS), + XBRL once pulled
@@ -163,9 +169,20 @@ exempt.
 
 ## The Reporting Protocol (project-specific, non-negotiable)
 
-The lead needs **complete fluency** on every line written, to present the
-system at any granularity. Therefore every `/implement` ends with a **Code
-Walkthrough** at two levels:
+The lead needs a complete, ground-up **360° understanding** of AuditAgent —
+enough to present and defend it at any altitude. Therefore **every SDD step
+(CLARIFY, PLAN, TASKS, IMPLEMENT, EVALUATE) ends with an Educator Report**,
+produced before the next step begins. Each report:
+
+- **starts high and drills low** — architecture / domain down to the
+  specific files and what their code does;
+- **teaches the domain** — defines and motivates the terminology and the
+  decisions (XBRL, EDGAR, iXBRL, DuckDB-vs-Qdrant, RAG / agent design,
+  framework and package choices), not just the diff;
+- **surfaces trade-offs** — every fork and the alternative it rejected.
+
+The **IMPLEMENT** report carries the two-level **Code Walkthrough** as its
+core:
 
 - **Module level** — which module the task belongs to, its role, where it
   sits in the architecture/data-flow, and what changed at the module
@@ -173,8 +190,11 @@ Walkthrough** at two levels:
 - **File level** — each file and function touched: what it does and *why*
   it exists, in plain language a reviewer can re-present.
 
-A task is not "done" until its walkthrough exists. This is encoded in
-`docs/constitution.md` §2 and in `.agent/commands/implement.md`.
+Reports are authored in Markdown (the committed source of truth) under
+`reports/<slug>/NN-<stage>.md` and rendered to sibling PDFs (rebuildable,
+gitignored) by `reports/render.py`. A step is not "done" until its report
+exists. This is encoded in `docs/constitution.md` §2, in each
+`.agent/commands/*.md`, and in the `sdd-feature-cycle` skill.
 
 ---
 

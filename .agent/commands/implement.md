@@ -38,10 +38,12 @@ If preconditions fail, ASK before doing anything.
    without running it. If you can't run it locally (e.g. it needs Qdrant
    up, the DuckDB facts built, or a cloud LLM key), flag that as a
    precondition and ask the user.
-5. **Deliver the Code Walkthrough.** Before you propose the commit, you
-   produce the two-level walkthrough (see "The Reporting Protocol"
-   below). A task whose code is written but whose walkthrough is missing
-   is NOT done (Constitution §2 / §6.5).
+5. **Produce the Educator Report (with the Code Walkthrough).** Before you
+   propose the commit, write the task's report
+   `reports/<slug>/04-implement-T<N>.md` — whose mandatory core is the
+   two-level Code Walkthrough — and deliver that walkthrough inline (see
+   "The Reporting Protocol" below). A task whose code is written but whose
+   report/walkthrough is missing is NOT done (Constitution §2 / §6.5).
 6. **Commit at the end, with approval.** Propose the commit message,
    show the staged files and diff scope, and WAIT for the user's "yes."
    Never commit without confirmation. Never push. Pushing is the user's
@@ -66,7 +68,10 @@ it explicitly so no one ports RFI's two-repo habit here.**
 "task done" commit that includes:
 - the CODE change (the files in the task's `Files:` list), AND
 - the `tasks.md` edit (checkbox `[x]` + the dated outcome line), AND
-- the `spec.md` frontmatter `status` bump (if it changed this task),
+- the `spec.md` frontmatter `status` bump (if it changed this task), AND
+- the task's Educator Report Markdown
+  `reports/<slug>/04-implement-T<N>.md` (the rendered `.pdf` is gitignored,
+  so it is NOT staged),
 
 ending with the `Spec: <id>` footer. After the commit the working tree
 is clean. (Everything else stands: propose the message, show the staged
@@ -82,6 +87,8 @@ files and diff size, WAIT for user approval, never push.)
 5. Adjacent code to understand the local conventions, and
    `docs/architecture.md` §3/§5 for the module's role and the contracts
    it touches (you will need this for the walkthrough).
+6. `.claude/skills/sdd-feature-cycle/templates/report-template.md` — the
+   shape of the Educator Report you'll author for this task.
 
 ## Process
 
@@ -99,8 +106,10 @@ files and diff size, WAIT for user approval, never push.)
    hit@k on the small fixed set — §4.3). Any heavy LLM-judge /
    re-embedding run named by the plan is NOTED as queued, not run here.
    (UI manual verification is N/A until M9.)
-4. **Produce the Code Walkthrough** (Reporting Protocol — see below).
-   This is a required step, not an optional nicety.
+4. **Produce the Educator Report** `reports/<slug>/04-implement-T<N>.md`
+   (Reporting Protocol — see below), whose mandatory core is the two-level
+   Code Walkthrough, and render it to PDF. This is a required step, not an
+   optional nicety.
 5. **Update `tasks.md`** — mark the task `[x]` and append a one-line
    note: `done <YYYY-MM-DD>: <brief outcome>`. If the task uncovered a
    follow-up, add it to a "Discovered work" section at the bottom of
@@ -119,22 +128,33 @@ files and diff size, WAIT for user approval, never push.)
 
    Show the user:
    - the proposed message,
-   - the list of staged file paths (code + `tasks.md` + `spec.md`),
+   - the list of staged file paths (code + `tasks.md` + `spec.md` +
+     report `.md`),
    - the size of the diff (lines added/removed).
 
 8. **Wait for approval.** The user says "commit" or "yes." Then make the
-   single atomic commit (code + `tasks.md` + `spec.md`) with the
-   proposed message. If the user requests edits to the message, apply
-   and re-confirm before committing.
+   single atomic commit (code + `tasks.md` + `spec.md` + the task's report
+   `.md`) with the proposed message. If the user requests edits to the
+   message, apply and re-confirm before committing.
 9. **Report and STOP.** Final message: which task is done, which check
    ran with what outcome, the Code Walkthrough, what the next task ID
    is, and that you are stopping.
 
 ## The Reporting Protocol (mandatory — Constitution §2)
 
-Every `/implement` task MUST end with a **Code Walkthrough** at two
-granularities. This is the project's defining process addition: the lead
-must be able to re-present every line, top-down, at any altitude.
+Every `/implement` task MUST end with an **Educator Report** whose
+mandatory core is the two-level **Code Walkthrough**. This is the project's
+defining process addition: the lead must be able to re-present every line,
+top-down, at any altitude — *and* understand the domain the code serves.
+
+**The report file:** `reports/<slug>/04-implement-T<N>.md` (one per task),
+authored from `.claude/skills/sdd-feature-cycle/templates/report-template.md`
+and rendered to a sibling PDF with `python reports/render.py
+reports/<slug>/04-implement-T<N>.md`. The Markdown is the committed source
+of truth and rides this task's atomic commit (see the single-repo commit
+rule); the PDF is rebuildable and gitignored.
+
+**The Code Walkthrough — the report's mandatory drill-down core:**
 
 - **Module level** — name which module (per `docs/architecture.md` §3
   layer map) the task belongs to, its role and where it sits in the data
@@ -146,9 +166,13 @@ must be able to re-present every line, top-down, at any altitude.
   WHY it exists, in plain language the lead can re-present top-down to
   line level. Not a diff dump — an explanation.
 
-The walkthrough is delivered IN the `/implement` response. Its substance
-is captured later in the spec's `evaluate.md` when the spec closes. A
-task without its walkthrough is not done.
+Around that core, keep the educator framing: orient the task on the roadmap
+and data flow, and teach the domain concept the code embodies (e.g. why an
+XBRL fact's period is instant vs duration, why provenance is stamped at this
+layer). The walkthrough is **also delivered inline in the `/implement`
+response** so the user sees it without opening the file. Its substance is
+folded into the spec's `evaluate.md` when the spec closes. A task without
+its report (and the walkthrough inside it) is not done.
 
 ## Forbidden actions
 
@@ -251,11 +275,12 @@ user the task should be split or the plan amended.
 - **Reads** git state to understand the working tree before changing
   files. If the working tree isn't clean, ASK the user — don't blindly
   add to whatever they had pending.
-- **Writes** code in the named module under `src/`, plus `tasks.md` and
-  `spec.md` (status field).
+- **Writes** code in the named module under `src/`, plus `tasks.md`,
+  `spec.md` (status field), and the task's Educator Report
+  `reports/<slug>/04-implement-T<N>.md`.
 - **Commits** ONE atomic "task done" commit (code + `tasks.md` +
-  `spec.md`) with the user-approved message including the `Spec: <id>`
-  footer. Working tree clean afterward. Never pushes.
+  `spec.md` + report `.md`) with the user-approved message including the
+  `Spec: <id>` footer. Working tree clean afterward. Never pushes.
 - **Never** runs destructive git commands. If you encounter a merge
   conflict or detached HEAD, stop and surface it.
 
@@ -265,12 +290,13 @@ user the task should be split or the plan amended.
 ✓ Task T<N> done
    Spec: <id>
    Module: <ingestion | chunking | index | retrieval | agent | api | eval | config>
-   Files changed: <count>, +<added> -<removed>  (code + tasks.md + spec.md)
+   Files changed: <count>, +<added> -<removed>  (code + tasks.md + spec.md + report .md)
    Check: <path::class::method> — <pass | fail>
    Eval (if applicable): <cheap-tier check> — <pass | fail>; heavy tier: <queued | n/a>
+   Report: reports/<slug>/04-implement-T<N>.md (+ rendered .pdf)
    Commit: <hash> "<summary>"
 
-— Code Walkthrough —
+— Code Walkthrough (the report's core, delivered inline) —
 Module level: <module, role, data-flow position, boundary change vs §5 contracts>
 File level:
   <file>::<fn> — <what it does and why it exists>

@@ -1,0 +1,5 @@
+# Doc-tooling dependencies for the Educator Report renderer (reports/render.py).
+# Deliberately isolated from application packaging — M1 owns the app's
+# dependency manifest. Pure-Python Markdown -> HTML -> PDF, no system libs.
+markdown>=3.5
+xhtml2pdf>=0.2.11

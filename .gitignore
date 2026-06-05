@@ -26,7 +26,9 @@ chroma/
 *.duckdb.wal
 
 # --- Derived corpus artifacts (rebuilt by the ingestion pipeline) ---
-# NOTE: raw 10-K PDFs under data/SEC/ are versioned via Git LFS — do NOT ignore them.
+# NOTE: raw source corpus under data/SEC/ — 10-K PDFs and the XBRL filing
+# packages (data/SEC/10-K Filings/xbrl/) — is versioned via Git LFS. Do NOT
+# ignore it; only the *derived* outputs below are rebuildable and ignored.
 data/derived/
 data/parsed/
 data/index/
@@ -34,6 +36,10 @@ data/index/
 # --- Evaluation transient outputs (keep committed baselines under eval/baselines/) ---
 eval/runs/
 eval/_tmp/
+
+# --- Educator Reports: Markdown is the committed source of truth; the rendered
+# PDFs are rebuildable via reports/render.py, so they are ignored (§2, §5.2). ---
+reports/**/*.pdf
 
 # --- Observability local data ---
 .phoenix/
