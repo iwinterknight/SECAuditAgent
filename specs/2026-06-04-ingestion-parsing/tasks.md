@@ -54,7 +54,7 @@ cadence.
       construction. Acceptance `test_contracts_location.py::test_types_defined_in_config`
       green; validator companion test green (2/2).
 
-- [ ] **T3. `config/` settings + logging.**
+- [x] **T3. `config/` settings + logging.**
       Files: `src/config/settings.py`, `src/config/logging.py`,
       `tests/conftest.py`, `tests/unit/test_settings.py`
       Acceptance: `tests/unit/test_settings.py::test_filings_table_resolves`
@@ -68,6 +68,16 @@ cadence.
       gains accession-path fixtures derived from `get_settings()` (single source
       of truth for paths — no hardcoding in tests).
       Depends-on: T2
+      done 2026-06-05: single `Settings`/`get_settings()` (lru_cache singleton)
+      with the authoritative `FILINGS` table — the one place the
+      accession↔FY↔filename join lives; `corpus_pdf_dir`/`xbrl_dir`/`derived_dir`
+      as project-root-derived properties, `filing_for`/`pdf_path`/
+      `xbrl_instance_path` helpers; `configure_logging()` reads level from
+      settings, no `print`. `conftest` adds `settings` + `sample_filing` (FY2024)
+      fixtures. Installed `pydantic-settings==2.14.1` into `.venv` (already locked
+      in T1). Acceptance `test_settings.py::test_filings_table_resolves` green;
+      2 companions (singleton, accession_to_fy consistency) green (3/3; full unit
+      suite 7/7).
 
 - [ ] **T4. XBRL extractor — Arelle → `XBRLFact`s.**
       Files: `src/ingestion/xbrl.py`, `tests/conftest.py`,
