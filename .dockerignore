@@ -1,0 +1,19 @@
+# Keep the build context (and image) small. The app needs only the pre-built
+# derived corpus (data/derived/ingestion) + config/ + ingestion.serialize + app/.
+.git/
+.venv/
+data/SEC/
+data/parsed/
+data/index/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+reports/
+specs/
+docs/
+tests/
+*.duckdb
+*.log
+.env

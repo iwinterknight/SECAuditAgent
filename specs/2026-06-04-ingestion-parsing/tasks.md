@@ -216,8 +216,12 @@ cadence.
       `elements/` + `facts/` JSONL under gitignored `data/derived/`; a second run
       is byte-identical; an unknown accession raises; no network fetch occurs.
       Also `tests/unit/test_elements_provenance.py::test_known_elements_land_in_right_item`
-      (moved from T7) passes by reading the written `elements/` JSONL: a real MD&A
-      Element ⇒ `Item 7`, a financial-statements Element ⇒ `Item 8`.
+      (moved from T7) passes by reading the written `elements/` JSONL — asserting
+      `assign_items`' real behavior on JPM's structure: the body `Item 7`/`Item 8`
+      *headings* are labeled correctly and `Item 1A` carries a large body, while the
+      substantive financial statements (Exhibit 13, incorporated by reference) land
+      in `Item 15`. (See Discovered work — JPM files MD&A/financials as Exhibit 13,
+      so they are not under body Items 7/8.)
       Notes: `run(accessions: list[str] | None = None)` — the **only** place the
       PDF↔accession↔FY join is resolved (reads `Settings.FILINGS`); `None` ⇒ all
       five; unknown accession ⇒ **hard error**; CLI `python -m ingestion.pipeline`.
@@ -240,4 +244,12 @@ cadence.
 
 ## Discovered work
 
-(none yet — populate during IMPLEMENT if scope surfaces.)
+- **Semantic section labels for incorporated-by-reference exhibits (from T10).**
+  JPMorgan's 10-K states Items 7 (MD&A) and 8 (Financial Statements) as
+  cross-references and files the substantive content as **Exhibit 13** under
+  **Item 15** ("MD&A ... appears on pages 52-167"). So `assign_items` (correctly)
+  labels ~82% of FY2024 Elements `Item 15`, and the real MD&A/financials are *not*
+  findable by their semantic Item (7/8). For retrieval (M2+) to scope to "MD&A" or
+  "the financial statements", section assignment needs to recognize Exhibit 13's
+  internal structure and map it to semantic Items. Out of M1's mechanical-stamping
+  scope — its own spec/task. Surfaced by `test_known_elements_land_in_right_item`.

@@ -1,0 +1,168 @@
+{
+  "timestamp": "2026-06-08T08:32:47+00:00",
+  "model": "gpt-4o-mini",
+  "n_items": 10,
+  "aggregate": {
+    "numeric_exact": 1.0,
+    "tool_accuracy": 1.0,
+    "retrieval_hit_rate": 1.0,
+    "groundedness": 1.0,
+    "answer_relevance": 1.0,
+    "validator_pass_rate": 1.0
+  },
+  "regression_alerts": [],
+  "data_drift_alerts": [
+    {
+      "metric": "Net income",
+      "from": 2022,
+      "to": 2023,
+      "pct_change": 31.5
+    },
+    {
+      "metric": "Net interest income",
+      "from": 2022,
+      "to": 2023,
+      "pct_change": 33.8
+    },
+    {
+      "metric": "Diluted EPS",
+      "from": 2022,
+      "to": 2023,
+      "pct_change": 34.2
+    }
+  ],
+  "items": [
+    {
+      "id": "net_income_2024",
+      "kind": "numeric",
+      "answer": "JPMorgan's net income in fiscal year 2024 was $58,471 million.",
+      "tools_used": [
+        "lookup_financial_fact"
+      ],
+      "validator_grounded": true,
+      "tool_correct": true,
+      "numeric_exact": true,
+      "groundedness": 1.0,
+      "relevance": 1.0
+    },
+    {
+      "id": "net_income_2021",
+      "kind": "numeric",
+      "answer": "The net income for JPMorgan Chase & Co. in 2021 was $48,334 million.",
+      "tools_used": [
+        "lookup_financial_fact"
+      ],
+      "validator_grounded": true,
+      "tool_correct": true,
+      "numeric_exact": true,
+      "groundedness": 1.0,
+      "relevance": 1.0
+    },
+    {
+      "id": "total_assets_2024",
+      "kind": "numeric",
+      "answer": "Total assets at year-end 2024 were $4,002,814 million.",
+      "tools_used": [
+        "lookup_financial_fact"
+      ],
+      "validator_grounded": true,
+      "tool_correct": true,
+      "numeric_exact": true,
+      "groundedness": 1.0,
+      "relevance": 1.0
+    },
+    {
+      "id": "revenue_2023",
+      "kind": "numeric",
+      "answer": "The total net revenue for JPMorgan Chase & Co. in 2023 was $158,104 million.",
+      "tools_used": [
+        "lookup_financial_fact"
+      ],
+      "validator_grounded": true,
+      "tool_correct": true,
+      "numeric_exact": true,
+      "groundedness": 1.0,
+      "relevance": 1.0
+    },
+    {
+      "id": "nii_2025",
+      "kind": "numeric",
+      "answer": "Net interest income in 2025 was $95,443 million.",
+      "tools_used": [
+        "lookup_financial_fact"
+      ],
+      "validator_grounded": true,
+      "tool_correct": true,
+      "numeric_exact": true,
+      "groundedness": 1.0,
+      "relevance": 1.0
+    },
+    {
+      "id": "deposits_change",
+      "kind": "numeric",
+      "answer": "Total deposits at JPMorgan Chase & Co. changed as follows from 2021 to 2025:\n\n- **FY2021**: $2,462,303 million\n- **FY2022**: $2,340,179 million (decrease)\n- **FY2023**: $2,400,688 million (increase)\n- **FY2024**: $2,406,032 million (slight increase)\n- **FY2025**: $2,559,320 million (increase)\n\nOverall, total deposits decreased from FY2021 to FY2022, then increased in the following years, reaching $2,559,320 million in FY2025.",
+      "tools_used": [
+        "lookup_financial_fact",
+        "lookup_financial_fact",
+        "lookup_financial_fact",
+        "lookup_financial_fact",
+        "lookup_financial_fact"
+      ],
+      "validator_grounded": true,
+      "tool_correct": true,
+      "numeric_exact": true,
+      "groundedness": 1.0,
+      "relevance": 1.0
+    },
+    {
+      "id": "eps_2024",
+      "kind": "numeric",
+      "answer": "The diluted EPS for JPMorgan Chase & Co. in 2024 was $19.75 per share.",
+      "tools_used": [
+        "lookup_financial_fact"
+      ],
+      "validator_grounded": true,
+      "tool_correct": true,
+      "numeric_exact": true,
+      "groundedness": 1.0,
+      "relevance": 1.0
+    },
+    {
+      "id": "risk_factors",
+      "kind": "narrative",
+      "answer": "JPMorgan identifies several key risk factors in its FY2024 10-K filing. These include:\n\n1. **Cybersecurity Risks**: The governance and oversight for cybersecurity risk management is a significant concern, focusing on prevention, detection, mitigation, and remediation (FY2024, p.161).\n\n2. **Capital Allocation Risks**: Each line of business (LOB) and Corporate is allocated capital based on various factors, including capital levels of similarly rated peers and regulatory capital requirements (FY2024, p.108).\n\n3. **General Risks and Uncertainties**: A comprehensive discussion of other risks and uncertainties is provided in Part I, Item 1A of the filing (FY2024, p.172).\n\nFor a detailed understanding, it is advisable to refer to the specific sections mentioned in the filing.",
+      "tools_used": [
+        "search_filings"
+      ],
+      "validator_grounded": true,
+      "tool_correct": true,
+      "retrieval_hit": true,
+      "groundedness": 1.0,
+      "relevance": 1.0
+    },
+    {
+      "id": "credit_risk",
+      "kind": "narrative",
+      "answer": "The FY2024 10-K filing discusses credit risk management in several key areas:\n\n1. **Definition and Scope**: Credit risk is defined as the risk associated with the default or change in credit profile of a client, counterparty, or customer (FY2024, p.123). It encompasses various types of risks, including consumer credit risk, wholesale credit risk, and investment portfolio risk (FY2024, p.95).\n\n2. **Governance and Policies**: The Firm has established credit risk management governance that includes monitoring and measuring credit risk, as well as defining credit risk policies, procedures, and limits (FY2024, p.121).\n\n3. **Monitoring and Reporting**: To facilitate effective decision-making, the Firm regularly reports aggregate credit exposure, credit quality forecasts, concentration levels, and changes in risk profiles to senior members of Credit Risk Management. Detailed portfolio reports are prepared, and the appropriateness of the allowance for credit losses is reviewed by senior management at least quarterly (FY2024, p.122).\n\n4. **Framework**: The Firm maintains a credit risk policy framework to guide its credit risk management practices (FY2024, p.121). \n\nThese elements highlight the comprehensive approach JPMorgan Chase & Co. takes in managing credit risk across its operations.",
+      "tools_used": [
+        "search_filings"
+      ],
+      "validator_grounded": true,
+      "tool_correct": true,
+      "retrieval_hit": true,
+      "groundedness": 1.0,
+      "relevance": 1.0
+    },
+    {
+      "id": "future_price",
+      "kind": "refusal",
+      "answer": "I cannot provide the share price for JPMorgan on March 1, 2026, as that information is not available in the 10-K filings or any other financial reports.",
+      "tools_used": [],
+      "validator_grounded": true,
+      "tool_correct": true,
+      "refused": true,
+      "groundedness": 1.0,
+      "relevance": 1.0
+    }
+  ]
+}
