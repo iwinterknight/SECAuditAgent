@@ -173,7 +173,7 @@ cadence.
       the prior Item), ordinary sub-headings inherit. Pure test passes (0.08s, no
       corpus). Real-corpus Item-correctness test relocated to T10.
 
-- [ ] **T8. Firewall guard — the §1.2 structural check.**
+- [x] **T8. Firewall guard — the §1.2 structural check.**
       Files: `tests/unit/test_firewall.py`
       Acceptance: `tests/unit/test_firewall.py::test_element_path_never_constructs_xbrlfact`
       passes — static check that no symbol in `ingestion.elements` /
@@ -183,6 +183,12 @@ cadence.
       Notes: AST / import inspection. This is the §1.2 "numbers only from XBRL"
       mechanism made executable; it can only pass once both paths exist.
       Depends-on: T4, T6, T7
+      done 2026-06-08: `test_firewall.py` makes the §1.2 firewall executable —
+      AST check (not text-grep, so the modules' docstrings naming `XBRLFact` don't
+      false-fail): `ingestion.elements`/`.sections` carry zero code references to
+      `XBRLFact`, and `XBRLFact` has exactly one definition site (`config.schema`).
+      Non-vacuous: an import into the PDF path, or a deleted/duplicated type, fails.
+      1 passed (0.13s, pure/no corpus).
 
 - [ ] **T9. JSONL serialization — deterministic write/read.**
       Files: `src/ingestion/serialize.py`, `tests/unit/test_serialize.py`
