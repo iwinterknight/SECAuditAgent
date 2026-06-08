@@ -21,7 +21,7 @@ isn't grounded (Self-RAG), then a **validator** checks every figure.
 |---|---|---|
 | `lookup_financial_fact(metric, year?)` | **exact XBRL facts** (FY2021–2025) | any financial number — from XBRL, never the model |
 | `compute_change(metric, y1, y2)` | **deterministic math** over XBRL facts | changes / growth / comparisons — exact arithmetic, not LLM math |
-| `search_filings(query)` | **hybrid retrieval** (dense + sparse RRF + parent-expansion) over 3,610 FY2024 Elements | "what does the filing say" |
+| `search_filings(query)` | **hybrid retrieval** (dense + sparse RRF + parent-expansion) over 17,009 Elements across FY2021–2025 | "what does the filing say" |
 
 **The loop (`app/agent.py`):**
 - **Router** — OpenAI tool-calling picks numeric / narrative / both. *"How did total assets change 2021→2025?"* → 5 fact-tool calls.
