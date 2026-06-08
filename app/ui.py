@@ -140,10 +140,11 @@ with eval_tab:
         agg = report["aggregate"]
         st.caption(f"Run: {report['timestamp']} · {report['n_items']} items · {report['model']}")
         st.markdown("**Answer quality — RAG triad + numeric fidelity**")
-        row1 = st.columns(3)
+        row1 = st.columns(4)
         row1[0].metric("Numeric exactness", agg.get("numeric_exact"))
         row1[1].metric("Retrieval hit-rate", agg.get("retrieval_hit_rate"))
-        row1[2].metric("Validator pass-rate", agg.get("validator_pass_rate"))
+        row1[2].metric("Year-scope accuracy", agg.get("year_scope_accuracy"))
+        row1[3].metric("Validator pass-rate", agg.get("validator_pass_rate"))
         row2 = st.columns(3)
         row2[0].metric("Groundedness", agg.get("groundedness"))
         row2[1].metric("Answer relevance", agg.get("answer_relevance"))

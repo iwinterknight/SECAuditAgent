@@ -43,24 +43,42 @@ _DRIFT_TOL = 0.30  # a headline metric moving >30% YoY is flagged for review
 # items name a keyword the retrieved context should contain; the refusal item
 # checks the agent declines to invent an unavailable figure.
 GOLDEN: list[dict[str, Any]] = [
+    # Numeric — total assets for EACH fiscal year (all 5 years exercised).
+    {"id": "assets_2021", "q": "What were JPMorgan's total assets at year-end 2021?",
+     "kind": "numeric", "expect_number": "3,743,567", "expect_tool": "lookup_financial_fact"},
+    {"id": "assets_2022", "q": "What were total assets at year-end 2022?",
+     "kind": "numeric", "expect_number": "3,665,743", "expect_tool": "lookup_financial_fact"},
+    {"id": "assets_2023", "q": "What were total assets at year-end 2023?",
+     "kind": "numeric", "expect_number": "3,875,393", "expect_tool": "lookup_financial_fact"},
+    {"id": "assets_2024", "q": "What were total assets at year-end 2024?",
+     "kind": "numeric", "expect_number": "4,002,814", "expect_tool": "lookup_financial_fact"},
+    {"id": "assets_2025", "q": "What were total assets at year-end 2025?",
+     "kind": "numeric", "expect_number": "4,424,900", "expect_tool": "lookup_financial_fact"},
+    # Other metrics / years.
     {"id": "net_income_2024", "q": "What was JPMorgan's net income in fiscal year 2024?",
      "kind": "numeric", "expect_number": "58,471", "expect_tool": "lookup_financial_fact"},
     {"id": "net_income_2021", "q": "What was net income in 2021?",
      "kind": "numeric", "expect_number": "48,334", "expect_tool": "lookup_financial_fact"},
-    {"id": "total_assets_2024", "q": "What were total assets at year-end 2024?",
-     "kind": "numeric", "expect_number": "4,002,814", "expect_tool": "lookup_financial_fact"},
     {"id": "revenue_2023", "q": "What was total net revenue in 2023?",
      "kind": "numeric", "expect_number": "158,104", "expect_tool": "lookup_financial_fact"},
     {"id": "nii_2025", "q": "What was net interest income in 2025?",
      "kind": "numeric", "expect_number": "95,443", "expect_tool": "lookup_financial_fact"},
-    {"id": "deposits_change", "q": "How did total deposits change from 2021 to 2025?",
-     "kind": "numeric", "expect_number": "2,559,320", "expect_tool": "lookup_financial_fact"},
     {"id": "eps_2024", "q": "What was diluted EPS in 2024?",
      "kind": "numeric", "expect_number": "19.75", "expect_tool": "lookup_financial_fact"},
+    # Cross-year arithmetic (deterministic calc tool).
+    {"id": "deposits_change", "q": "How did total deposits change from 2021 to 2025?",
+     "kind": "numeric", "expect_number": "2,559,320", "expect_tool": "compute_change"},
+    # Narrative (year-agnostic — retrieves across all years).
     {"id": "risk_factors", "q": "What does JPMorgan identify as key risk factors?",
      "kind": "narrative", "expect_keywords": ["risk"], "expect_tool": "search_filings"},
     {"id": "credit_risk", "q": "What does the filing say about credit risk?",
      "kind": "narrative", "expect_keywords": ["credit"], "expect_tool": "search_filings"},
+    # Year-scoped narrative — must retrieve from the named filing year.
+    {"id": "capital_2022", "q": "According to the FY2022 10-K specifically, what does JPMorgan discuss about capital?",
+     "kind": "narrative", "expect_keywords": ["capital"], "expect_tool": "search_filings", "expect_year": 2022},
+    {"id": "risk_2025", "q": "In the 2025 10-K, what risks does the firm highlight?",
+     "kind": "narrative", "expect_keywords": ["risk"], "expect_tool": "search_filings", "expect_year": 2025},
+    # Grounding / refusal.
     {"id": "future_price", "q": "What was JPMorgan's share price on March 1, 2026?",
      "kind": "refusal", "expect_tool": None},
 ]
@@ -152,6 +170,11 @@ def _score_item(client: OpenAI, item: dict) -> dict[str, Any]:
     elif item["kind"] == "narrative":
         blob = " ".join(e.text.lower() for e in result["sources"])
         scores["retrieval_hit"] = any(k.lower() in blob for k in item["expect_keywords"])
+        if item.get("expect_year"):
+            years = [e.fiscal_year for e in result["sources"]]
+            scores["year_scope_ok"] = bool(years) and (
+                sum(y == item["expect_year"] for y in years) >= len(years) * 0.5
+            )
     elif item["kind"] == "refusal":
         low = answer.lower()
         scores["refused"] = any(
@@ -195,6 +218,7 @@ def _aggregate(items: list[dict]) -> dict[str, float]:
         "tool_appropriateness": mean("tool_appropriateness"),
         "trajectory_efficiency": mean("efficiency"),
         "answer_faithfulness": mean("faithfulness"),
+        "year_scope_accuracy": mean("year_scope_ok"),
     }
 
 

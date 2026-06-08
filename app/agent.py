@@ -38,9 +38,10 @@ XBRL. Use it for ANY financial number. Never state a figure without it.
 - compute_change(metric, from_year, to_year): the EXACT difference and % change of a \
 metric between two years, computed from XBRL. Use it for ANY change / growth / \
 comparison — never do the arithmetic yourself.
-- search_filings(query): relevant narrative passages from the 10-Ks (FY2021-2025), \
-each tagged with its fiscal year and page. Use it for qualitative / "what does the \
-filing say" questions.
+- search_filings(query, fiscal_year?): relevant narrative passages from the 10-Ks \
+(FY2021-2025), each tagged with its fiscal year and page. Pass fiscal_year to scope \
+to one year's filing (e.g. a question about "the 2022 10-K"). Use it for qualitative \
+/ "what does the filing say" questions.
 
 Decide which tool(s) the question needs, call them, then answer concisely. Cite \
 narrative as (FY<year>, p.X) using the year shown on the passage. If a number is not \
@@ -88,11 +89,18 @@ _TOOLS = [
         "type": "function",
         "function": {
             "name": "search_filings",
-            "description": "Search the FY2024 10-K narrative (text/tables/headings) "
-            "for passages relevant to a query. Returns passages with page numbers.",
+            "description": "Search the 10-K narrative (FY2021-2025) for passages "
+            "relevant to a query. Pass fiscal_year to scope to one year's filing. "
+            "Returns passages tagged with fiscal year and page.",
             "parameters": {
                 "type": "object",
-                "properties": {"query": {"type": "string"}},
+                "properties": {
+                    "query": {"type": "string"},
+                    "fiscal_year": {
+                        "type": "integer",
+                        "description": "2021-2025; omit to search all years",
+                    },
+                },
                 "required": ["query"],
             },
         },
@@ -136,9 +144,11 @@ def _tool_lookup_fact(table: dict, metric: str, fiscal_year: int | None = None) 
     return f"{metric} (exact, from XBRL): " + "; ".join(parts)
 
 
-def _tool_search(question: str, k: int = 6) -> tuple[str, list]:
-    # Hybrid: dense + sparse fused (RRF) with parent-expansion (retrieval.py).
-    hits = hybrid_search(question, k=k)
+def _tool_search(
+    question: str, k: int = 6, fiscal_year: int | None = None
+) -> tuple[str, list]:
+    # Hybrid: dense + sparse fused (RRF) + parent-expansion, optionally year-scoped.
+    hits = hybrid_search(question, k=k, fiscal_year=fiscal_year)
     rendered = "\n\n".join(f"[FY{e.fiscal_year} p.{e.page}] {e.text[:500]}" for e in hits)
     return rendered, hits
 
@@ -198,7 +208,9 @@ def _tool_loop(
                     table, args.get("metric", ""), args.get("from_year"), args.get("to_year")
                 )
             elif name == "search_filings":
-                result, hits = _tool_search(args.get("query", ""))
+                result, hits = _tool_search(
+                    args.get("query", ""), fiscal_year=args.get("fiscal_year")
+                )
                 sources.extend(hits)
             else:
                 result = f"unknown tool: {name}"

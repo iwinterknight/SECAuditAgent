@@ -79,22 +79,32 @@ def build_index() -> int:
 
 
 def _parent_expand(elements: list[Element], indices: list[int]) -> list[Element]:
-    """Add each hit's immediate reading-order neighbors (fuller local context)."""
-    by_ordinal = {e.ordinal: i for i, e in enumerate(elements)}
+    """Add each hit's reading-order neighbors for fuller local context.
+
+    The combined index lists each filing's Elements contiguously in ordinal order, so a
+    hit's reading-order neighbors are simply the adjacent *list positions* — but only
+    within the same filing (``source_filing``), never crossing a year boundary (ordinals
+    repeat per filing, so keying on ordinal would mis-join across years)."""
+    n = len(elements)
     keep: list[int] = []
     seen: set[int] = set()
     for idx in indices:
-        ordinal = elements[idx].ordinal
-        for neighbor_ordinal in (ordinal - 1, ordinal, ordinal + 1):
-            j = by_ordinal.get(neighbor_ordinal)
-            if j is not None and j not in seen:
+        for j in (idx - 1, idx, idx + 1):
+            if (
+                0 <= j < n
+                and j not in seen
+                and elements[j].source_filing == elements[idx].source_filing
+            ):
                 seen.add(j)
                 keep.append(j)
     return [elements[j] for j in keep]
 
 
-def hybrid_search(query: str, k: int = 8, expand: bool = True) -> list[Element]:
-    """Top-k Elements by RRF(dense, sparse), optionally parent-expanded."""
+def hybrid_search(
+    query: str, k: int = 8, expand: bool = True, fiscal_year: int | None = None
+) -> list[Element]:
+    """Top-k Elements by RRF(dense, sparse), optionally scoped to one fiscal year
+    and parent-expanded."""
     elements, bm25, embeddings = _index()
 
     sparse_rank = np.argsort(bm25.get_scores(_tokens(query)))[::-1]
@@ -107,10 +117,13 @@ def hybrid_search(query: str, k: int = 8, expand: bool = True) -> list[Element]:
     dense_rank = np.argsort(embeddings @ q)[::-1]
 
     rrf: dict[int, float] = {}
-    for rank, idx in enumerate(sparse_rank[:50]):
+    for rank, idx in enumerate(sparse_rank[:80]):
         rrf[int(idx)] = rrf.get(int(idx), 0.0) + 1.0 / (_RRF_K + rank)
-    for rank, idx in enumerate(dense_rank[:50]):
+    for rank, idx in enumerate(dense_rank[:80]):
         rrf[int(idx)] = rrf.get(int(idx), 0.0) + 1.0 / (_RRF_K + rank)
 
-    top = sorted(rrf, key=lambda i: rrf[i], reverse=True)[:k]
+    ranked = sorted(rrf, key=lambda i: rrf[i], reverse=True)
+    if fiscal_year is not None:  # year-scoped retrieval (a metadata filter)
+        ranked = [i for i in ranked if elements[i].fiscal_year == fiscal_year]
+    top = ranked[:k]
     return _parent_expand(elements, top) if expand else [elements[i] for i in top]
