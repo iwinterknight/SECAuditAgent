@@ -6,7 +6,7 @@ WORKDIR /srv
 
 # Runtime deps only (corpus is pre-built JSONL).
 RUN pip install --no-cache-dir \
-    streamlit openai rank-bm25 pydantic pydantic-settings
+    streamlit openai rank-bm25 numpy pydantic pydantic-settings
 
 # Lightweight source modules the app imports (config + ingestion.serialize) — put
 # on PYTHONPATH, no package install needed. We deliberately do NOT copy the heavy

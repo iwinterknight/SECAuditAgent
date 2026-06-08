@@ -59,12 +59,15 @@ def _render_agent_result(result: dict) -> None:
                 st.markdown(f"- `{step['tool']}`  ·  `{json.dumps(step['args'])}`")
     validation = result["validation"]
     if validation["grounded"]:
-        st.caption("✅ Validator: every headline figure stated matches an exact XBRL fact.")
+        st.caption("✅ Validator: every figure stated is grounded in a tool result (exact XBRL / computed).")
     else:
         st.warning(
-            "⚠️ Validator: numbers not matched to a headline XBRL fact — "
-            f"{validation['ungrounded_numbers']} (verify against the source)."
+            "⚠️ Validator: numbers not grounded in any tool output — "
+            f"{validation['ungrounded_numbers']} (possible hallucination / hand-computed)."
         )
+    reflection = result.get("reflection")
+    if reflection and not reflection.get("ok", True):
+        st.caption(f"🔁 Self-corrected after critique — {reflection.get('issue', '')}")
     _render_sources(result["sources"])
 
 
@@ -136,14 +139,20 @@ with eval_tab:
     else:
         agg = report["aggregate"]
         st.caption(f"Run: {report['timestamp']} · {report['n_items']} items · {report['model']}")
+        st.markdown("**Answer quality — RAG triad + numeric fidelity**")
         row1 = st.columns(3)
         row1[0].metric("Numeric exactness", agg.get("numeric_exact"))
-        row1[1].metric("Tool-use accuracy", agg.get("tool_accuracy"))
-        row1[2].metric("Retrieval hit-rate", agg.get("retrieval_hit_rate"))
+        row1[1].metric("Retrieval hit-rate", agg.get("retrieval_hit_rate"))
+        row1[2].metric("Validator pass-rate", agg.get("validator_pass_rate"))
         row2 = st.columns(3)
         row2[0].metric("Groundedness", agg.get("groundedness"))
         row2[1].metric("Answer relevance", agg.get("answer_relevance"))
-        row2[2].metric("Validator pass-rate", agg.get("validator_pass_rate"))
+        row2[2].metric("Tool-use accuracy", agg.get("tool_accuracy"))
+        st.markdown("**Agent trajectory — LLM-judge over the tool-use path**")
+        row3 = st.columns(3)
+        row3[0].metric("Tool appropriateness", agg.get("tool_appropriateness"))
+        row3[1].metric("Trajectory efficiency", agg.get("trajectory_efficiency"))
+        row3[2].metric("Answer faithfulness", agg.get("answer_faithfulness"))
 
         if report["regression_alerts"]:
             st.error(f"🔴 Silent-failure / regression vs baseline: {report['regression_alerts']}")
@@ -168,10 +177,13 @@ with eval_tab:
                         "kind": it["kind"],
                         "numeric_exact": it.get("numeric_exact"),
                         "retrieval_hit": it.get("retrieval_hit"),
-                        "refused": it.get("refused"),
                         "tool_correct": it.get("tool_correct"),
                         "grounded": round(it.get("groundedness", 0), 2),
                         "relevant": round(it.get("relevance", 0), 2),
+                        "traj_approp": round(it.get("tool_appropriateness", 0), 2),
+                        "efficiency": round(it.get("efficiency", 0), 2),
+                        "faithful": round(it.get("faithfulness", 0), 2),
+                        "revised": it.get("revised"),
                         "tools": ",".join(it.get("tools_used", [])),
                     }
                     for it in report["items"]

@@ -93,6 +93,45 @@ def _judge(client: OpenAI, question: str, context: str, answer: str) -> dict[str
         return {"groundedness": 0.0, "relevance": 0.0}
 
 
+_TRAJECTORY_JUDGE = (
+    "You grade an AI agent's TOOL-USE TRAJECTORY (how it worked, not just its final "
+    "answer). The agent has two tools: lookup_financial_fact (exact XBRL figures) and "
+    "search_filings (narrative retrieval). Given the QUESTION, the ordered TRAJECTORY of "
+    "tool calls, the TOOL OUTPUTS, and the ANSWER, rate each 0.0-1.0:\n"
+    "- tool_appropriateness: were the right tools chosen for this question?\n"
+    "- efficiency: was the trajectory free of redundant or wasteful calls?\n"
+    "- faithfulness: does the answer correctly use the tool outputs (no drift/invention)?\n"
+    'Respond ONLY as JSON: {"tool_appropriateness": <f>, "efficiency": <f>, "faithfulness": <f>}'
+)
+
+
+def _judge_trajectory(
+    client: OpenAI, question: str, trace: list, tool_outputs: list, answer: str
+) -> dict[str, float]:
+    """LLM-judge over the agent's *trajectory* — the agentic counterpart to the RAG triad."""
+    trajectory = "\n".join(
+        f"{i + 1}. {t['tool']}({json.dumps(t['args'])})" for i, t in enumerate(trace)
+    ) or "(no tools called)"
+    try:
+        resp = client.chat.completions.create(
+            model=_MODEL, temperature=0, response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": _TRAJECTORY_JUDGE},
+                {"role": "user", "content":
+                 f"QUESTION:\n{question}\n\nTRAJECTORY:\n{trajectory}\n\n"
+                 f"TOOL OUTPUTS:\n{chr(10).join(tool_outputs)[:2500]}\n\nANSWER:\n{answer}"},
+            ],
+        )
+        data = json.loads(resp.choices[0].message.content or "{}")
+        return {
+            "tool_appropriateness": float(data.get("tool_appropriateness", 0.0)),
+            "efficiency": float(data.get("efficiency", 0.0)),
+            "faithfulness": float(data.get("faithfulness", 0.0)),
+        }
+    except Exception:  # noqa: BLE001
+        return {"tool_appropriateness": 0.0, "efficiency": 0.0, "faithfulness": 0.0}
+
+
 def _score_item(client: OpenAI, item: dict) -> dict[str, Any]:
     result = run_agent(item["q"])
     answer = result["answer"]
@@ -120,8 +159,11 @@ def _score_item(client: OpenAI, item: dict) -> dict[str, Any]:
                                "do not have", "unable", "no information")
         )
 
-    judged = _judge(client, item["q"], context, answer)
-    scores.update(judged)
+    scores.update(_judge(client, item["q"], context, answer))
+    scores.update(
+        _judge_trajectory(client, item["q"], result["trace"], result["tool_outputs"], answer)
+    )
+    scores["revised"] = bool(result.get("reflection") and not result["reflection"]["ok"])
     return scores
 
 
@@ -150,6 +192,9 @@ def _aggregate(items: list[dict]) -> dict[str, float]:
         "groundedness": mean("groundedness"),
         "answer_relevance": mean("relevance"),
         "validator_pass_rate": mean("validator_grounded"),
+        "tool_appropriateness": mean("tool_appropriateness"),
+        "trajectory_efficiency": mean("efficiency"),
+        "answer_faithfulness": mean("faithfulness"),
     }
 
 

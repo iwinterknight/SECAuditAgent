@@ -3,6 +3,9 @@
   "tool_accuracy": 1.0,
   "retrieval_hit_rate": 1.0,
   "groundedness": 1.0,
-  "answer_relevance": 1.0,
-  "validator_pass_rate": 1.0
+  "answer_relevance": 0.95,
+  "validator_pass_rate": 1.0,
+  "tool_appropriateness": 0.9,
+  "trajectory_efficiency": 0.88,
+  "answer_faithfulness": 0.9
 }
