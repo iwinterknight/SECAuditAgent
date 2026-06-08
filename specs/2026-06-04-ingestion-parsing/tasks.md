@@ -190,7 +190,7 @@ cadence.
       Non-vacuous: an import into the PDF path, or a deleted/duplicated type, fails.
       1 passed (0.13s, pure/no corpus).
 
-- [ ] **T9. JSONL serialization — deterministic write/read.**
+- [x] **T9. JSONL serialization — deterministic write/read.**
       Files: `src/ingestion/serialize.py`, `tests/unit/test_serialize.py`
       Acceptance: `tests/unit/test_serialize.py::test_roundtrip_and_byte_stable`
       passes — `write_jsonl`→`read_jsonl` round-trips both types equal, and
@@ -201,6 +201,12 @@ cadence.
       the plan's table: decomposition gives serialize its own decisive check,
       faster and more isolated than the full pipeline rebuild.)
       Depends-on: T2 (types)
+      done 2026-06-08: `write_jsonl` / `read_jsonl` for both streams — rows sorted
+      by total key (`ordinal` / `fact_id`), `json.dumps(sort_keys)` per row,
+      `Decimal`->canonical string + dates->ISO-8601 (pydantic `mode="json"`),
+      `write_bytes` for LF endings on every OS. Byte-identical re-write +
+      round-trip; validates on read. 2 tests pass (0.13s, no corpus).
+      Path-agnostic — T10 chooses the `data/derived/` paths.
 
 - [ ] **T10. Ingestion pipeline CLI — the join + rebuild.**
       Files: `src/ingestion/pipeline.py`, `.gitignore`,
