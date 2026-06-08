@@ -110,7 +110,7 @@ cadence.
       configured. Carried to T10: Arelle taxonomy cache must be pre-populated for
       the "no network fetch" guarantee.
 
-- [ ] **T5. Anchor numeric truth — the cheap-eval gate (seeds M7).**
+- [x] **T5. Anchor numeric truth — the cheap-eval gate (seeds M7).**
       Files: `tests/unit/test_xbrl_anchors.py`
       Acceptance: `tests/unit/test_xbrl_anchors.py::test_total_assets_and_net_income_exact`
       passes — **exact-match** of `us-gaap:Assets` (instant) and
@@ -121,6 +121,16 @@ cadence.
       integers from the five instances and pin them; per-FY `{fiscal_year:
       concept_tag}` override fallback if a tag doesn't resolve across all FYs.
       Depends-on: T4
+      done 2026-06-07: `test_xbrl_anchors.py::test_total_assets_and_net_income_exact`
+      green (10/10) — the §4.3 cheap deterministic gate. Read the 10 anchor values
+      from the five instances and pinned them ($M as filed): Total assets (instant)
+      3,743,567 / 3,665,743 / 3,875,393 / 4,002,814 / 4,424,900 and Net income
+      (duration) 48,334 / 37,676 / 49,552 / 58,471 / 57,048 for FY2021–FY2025. T4's
+      anchor `[VERIFY]` discharged: `us-gaap:Assets` + `us-gaap:NetIncomeLoss` are
+      taxonomy-stable across all five FYs (each resolves to exactly one consolidated,
+      dimensionless USD fact), so the per-FY concept-tag override map ships empty.
+      Exactly-one-match + Decimal-equality + unit==USD prevent a vacuous pass; first
+      seed of the M7 numeric truth set. Full unit suite 24/24.
 
 - [ ] **T6. PDF parser — Docling → `Element`s with provenance.**
       Files: `src/ingestion/elements.py`, `tests/conftest.py`,
