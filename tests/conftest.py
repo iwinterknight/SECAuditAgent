@@ -13,8 +13,9 @@ expensive parse runs once (T4, T6).
 
 import pytest
 
-from config.schema import XBRLFact
+from config.schema import Element, XBRLFact
 from config.settings import Filing, Settings, get_settings
+from ingestion.elements import parse_elements
 from ingestion.xbrl import extract_facts
 
 # The FY2022 filing — its FY2022 figures are reported a second time, restated, as
@@ -42,6 +43,21 @@ def sample_filing(settings: Settings) -> Filing:
     routes through the same ``filing_for`` lookup the pipeline uses.
     """
     return settings.filing_for("0000019617-25-000270")
+
+
+@pytest.fixture(scope="session")
+def parsed_elements(settings: Settings, sample_filing: Filing) -> list[Element]:
+    """The FY2024 10-K PDF parsed once into ``Element``s — the shared corpus for
+    the provenance tests. Docling downloads its layout/table models on first use
+    (one-time, network-dependent — hundreds of MB) and a full 10-K parse is
+    multi-minute, so this runs a single time per session and every Element-shape
+    test reads this list. It is the PDF-side twin of :func:`xbrl_facts`.
+    """
+    return parse_elements(
+        settings.pdf_path(sample_filing),
+        fiscal_year=sample_filing.fiscal_year,
+        source_filing=sample_filing.accession,
+    )
 
 
 @pytest.fixture(scope="session")

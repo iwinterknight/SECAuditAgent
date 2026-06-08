@@ -132,7 +132,7 @@ cadence.
       Exactly-one-match + Decimal-equality + unit==USD prevent a vacuous pass; first
       seed of the M7 numeric truth set. Full unit suite 24/24.
 
-- [ ] **T6. PDF parser — Docling → `Element`s with provenance.**
+- [x] **T6. PDF parser — Docling → `Element`s with provenance.**
       Files: `src/ingestion/elements.py`, `tests/conftest.py`,
       `tests/unit/test_elements_provenance.py`
       Acceptance: `tests/unit/test_elements_provenance.py::test_every_element_has_provenance`
@@ -146,6 +146,13 @@ cadence.
       `item` left `unknown` pending T7. `conftest` adds a parsed-elements session
       fixture (parse one PDF once). Document Docling's one-time model download.
       Depends-on: T3 (paths), T2 (`Element`)
+      done 2026-06-07: `parse_elements` (sole `Element` producer) via Docling;
+      FY2024 -> 5,111 Elements (3,989 text / 827 headings / 295 tables), all
+      consolidated + `item=unknown`, ids unique + ordinals contiguous. Parsed in
+      16-page windows + lighter `layout_v2`/TableFormer FAST after the single-shot
+      parse OOMed on this CPU/low-RAM host (std::bad_alloc -> segfault);
+      `parsed_elements` conftest fixture parses FY2024 once. Acceptance: 2 tests
+      (provenance + count-floor) pass in 24m17s.
 
 - [ ] **T7. Item-boundary stamping — `sections`.**
       Files: `src/ingestion/sections.py`, `tests/unit/test_sections.py`,
