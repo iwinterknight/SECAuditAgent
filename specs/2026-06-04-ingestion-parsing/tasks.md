@@ -154,20 +154,24 @@ cadence.
       `parsed_elements` conftest fixture parses FY2024 once. Acceptance: 2 tests
       (provenance + count-floor) pass in 24m17s.
 
-- [ ] **T7. Item-boundary stamping — `sections`.**
-      Files: `src/ingestion/sections.py`, `tests/unit/test_sections.py`,
-      `tests/unit/test_elements_provenance.py`
+- [x] **T7. Item-boundary stamping — `sections`.**
+      Files: `src/ingestion/sections.py`, `tests/unit/test_sections.py`
       Acceptance: `tests/unit/test_sections.py::test_missing_header_yields_unknown`
       (pure mini heading-fixture: a garbled Item header ⇒ `unknown`, never the
-      previous Item's label) **and**
-      `tests/unit/test_elements_provenance.py::test_known_elements_land_in_right_item`
-      (real corpus: an MD&A Element ⇒ `Item 7`; a financial-statements Element ⇒
-      `Item 8`) pass.
+      previous Item's label) passes.
       Notes: `assign_items(elements) -> list[Element]` — a deterministic pure
       pass that scans heading Elements for Item headers and stamps each Element
       with the Item it falls under; undetected boundary ⇒ `unknown` + warning. No
-      number handling.
+      number handling. The real-corpus Item-correctness test
+      (`test_known_elements_land_in_right_item`) is **moved to T10**, where it
+      reads the serialized JSONL (plan test strategy: corpus tests read the
+      derived streams — fast, no re-parse).
       Depends-on: T6
+      done 2026-06-08: `assign_items` (sole producer of Element `item`) — pure
+      forward-fill over heading Elements; recognized `Item N` / `Item 1A` set the
+      section, a garbled "Item ..." boundary resets to `unknown` + warns (never
+      the prior Item), ordinary sub-headings inherit. Pure test passes (0.08s, no
+      corpus). Real-corpus Item-correctness test relocated to T10.
 
 - [ ] **T8. Firewall guard — the §1.2 structural check.**
       Files: `tests/unit/test_firewall.py`
@@ -194,11 +198,14 @@ cadence.
 
 - [ ] **T10. Ingestion pipeline CLI — the join + rebuild.**
       Files: `src/ingestion/pipeline.py`, `.gitignore`,
-      `tests/unit/test_pipeline_rebuild.py`
+      `tests/unit/test_pipeline_rebuild.py`, `tests/unit/test_elements_provenance.py`
       Acceptance: `tests/unit/test_pipeline_rebuild.py::test_deterministic_and_gitignored`
       (`@pytest.mark.slow`) passes — `pipeline.run()` over all five filings writes
       `elements/` + `facts/` JSONL under gitignored `data/derived/`; a second run
       is byte-identical; an unknown accession raises; no network fetch occurs.
+      Also `tests/unit/test_elements_provenance.py::test_known_elements_land_in_right_item`
+      (moved from T7) passes by reading the written `elements/` JSONL: a real MD&A
+      Element ⇒ `Item 7`, a financial-statements Element ⇒ `Item 8`.
       Notes: `run(accessions: list[str] | None = None)` — the **only** place the
       PDF↔accession↔FY join is resolved (reads `Settings.FILINGS`); `None` ⇒ all
       five; unknown accession ⇒ **hard error**; CLI `python -m ingestion.pipeline`.
