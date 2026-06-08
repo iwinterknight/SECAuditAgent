@@ -34,7 +34,7 @@ N_ELEMENTS, N_YEARS = _warm()
 st.title("📊 JPMorgan Chase 10-K — Agentic RAG")
 st.caption(
     f"Agent routes between an **exact-XBRL fact tool** and a **narrative search "
-    f"tool**, then a **validator** checks the figures. Corpus: {N_ELEMENTS:,} FY2024 "
+    f"tool**, then a **validator** checks the figures. Corpus: {N_ELEMENTS:,} narrative "
     f"Elements + exact XBRL facts across {N_YEARS} fiscal years."
 )
 
@@ -47,7 +47,7 @@ def _render_sources(sources) -> None:
     with st.expander(f"Sources ({len(sources)} passages)"):
         for e in sources:
             snippet = e.text[:300].replace("<", "&lt;").replace(">", "&gt;")
-            st.markdown(f"**FY2024 · p.{e.page} · {e.kind.value}** — {snippet}")
+            st.markdown(f"**FY{e.fiscal_year} · p.{e.page} · {e.kind.value}** — {snippet}")
 
 
 def _render_agent_result(result: dict) -> None:
@@ -85,7 +85,7 @@ with chat_tab:
         st.divider()
         st.caption(
             "Numbers: exact `us-gaap` XBRL facts via a tool. "
-            "Narrative: BM25 over parsed FY2024 Elements. "
+            "Narrative: hybrid retrieval over parsed FY2021-2025 Elements. "
             "Agent + validator: OpenAI tool-calling."
         )
 

@@ -21,7 +21,7 @@ import numpy as np
 from openai import OpenAI
 from rank_bm25 import BM25Okapi
 
-from answer import _NARRATIVE_ACCESSION, _tokens
+from answer import _tokens
 from config.schema import Element
 from config.settings import get_settings
 from ingestion.serialize import read_jsonl
@@ -42,26 +42,34 @@ def _embed_texts(client: OpenAI, texts: list[str]) -> np.ndarray:
 
 @lru_cache(maxsize=1)
 def _index() -> tuple[list[Element], BM25Okapi, np.ndarray]:
+    """Load every parsed filing's Elements + embeddings (per-filing cache, so a newly
+    parsed year only embeds itself), concatenated into one hybrid index."""
     settings = get_settings()
     derived = settings.derived_dir / "ingestion"
-    elements = [
-        e
-        for e in read_jsonl(derived / "elements" / f"{_NARRATIVE_ACCESSION}.jsonl", Element)
-        if len(e.text) > 40
-    ]
-    bm25 = BM25Okapi([_tokens(e.text) for e in elements])
-
-    cache = derived / "embeddings" / f"{_NARRATIVE_ACCESSION}.npy"
-    embeddings: np.ndarray | None = None
-    if cache.is_file():
-        loaded = np.load(cache)
-        if loaded.shape[0] == len(elements):
-            embeddings = loaded
-    if embeddings is None:
-        embeddings = _embed_texts(OpenAI(), [e.text for e in elements])
-        cache.parent.mkdir(parents=True, exist_ok=True)
-        np.save(cache, embeddings)
-    return elements, bm25, embeddings
+    all_elements: list[Element] = []
+    all_embeddings: list[np.ndarray] = []
+    client: OpenAI | None = None
+    for filing in settings.FILINGS:
+        path = derived / "elements" / f"{filing.accession}.jsonl"
+        if not path.is_file():
+            continue
+        elements = [e for e in read_jsonl(path, Element) if len(e.text) > 40]
+        cache = derived / "embeddings" / f"{filing.accession}.npy"
+        embeddings = np.load(cache) if cache.is_file() else None
+        if embeddings is None or embeddings.shape[0] != len(elements):
+            client = client or OpenAI()
+            embeddings = _embed_texts(client, [e.text for e in elements])
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            np.save(cache, embeddings)
+        all_elements.extend(elements)
+        all_embeddings.append(embeddings)
+    matrix = (
+        np.vstack(all_embeddings).astype(np.float32)
+        if all_embeddings
+        else np.zeros((0, 1), dtype=np.float32)
+    )
+    bm25 = BM25Okapi([_tokens(e.text) for e in all_elements])
+    return all_elements, bm25, matrix
 
 
 def build_index() -> int:

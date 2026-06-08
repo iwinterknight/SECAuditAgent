@@ -38,12 +38,13 @@ XBRL. Use it for ANY financial number. Never state a figure without it.
 - compute_change(metric, from_year, to_year): the EXACT difference and % change of a \
 metric between two years, computed from XBRL. Use it for ANY change / growth / \
 comparison — never do the arithmetic yourself.
-- search_filings(query): relevant narrative passages from the FY2024 10-K, with page \
-numbers. Use it for qualitative / "what does the filing say" questions.
+- search_filings(query): relevant narrative passages from the 10-Ks (FY2021-2025), \
+each tagged with its fiscal year and page. Use it for qualitative / "what does the \
+filing say" questions.
 
 Decide which tool(s) the question needs, call them, then answer concisely. Cite \
-narrative as (FY2024, p.X). If a number is not available from the tools, say so — \
-never invent or hand-compute one."""
+narrative as (FY<year>, p.X) using the year shown on the passage. If a number is not \
+available from the tools, say so — never invent or hand-compute one."""
 
 _TOOLS = [
     {
@@ -138,7 +139,7 @@ def _tool_lookup_fact(table: dict, metric: str, fiscal_year: int | None = None) 
 def _tool_search(question: str, k: int = 6) -> tuple[str, list]:
     # Hybrid: dense + sparse fused (RRF) with parent-expansion (retrieval.py).
     hits = hybrid_search(question, k=k)
-    rendered = "\n\n".join(f"[FY2024 p.{e.page}] {e.text[:500]}" for e in hits)
+    rendered = "\n\n".join(f"[FY{e.fiscal_year} p.{e.page}] {e.text[:500]}" for e in hits)
     return rendered, hits
 
 

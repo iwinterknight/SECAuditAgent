@@ -104,10 +104,11 @@ def load_corpus() -> tuple[list[Element], BM25Okapi, dict]:
     settings = get_settings()
     derived = settings.derived_dir / "ingestion"
 
-    elements = read_jsonl(
-        derived / "elements" / f"{_NARRATIVE_ACCESSION}.jsonl", Element
-    )
-    elements = [e for e in elements if len(e.text) > 40]  # drop tiny fragments
+    elements: list[Element] = []
+    for filing in settings.FILINGS:  # every parsed filing's narrative (FY2021-2025)
+        path = derived / "elements" / f"{filing.accession}.jsonl"
+        if path.is_file():
+            elements.extend(e for e in read_jsonl(path, Element) if len(e.text) > 40)
     bm25 = BM25Okapi([_tokens(e.text) for e in elements])
 
     table: dict[tuple[str, int], tuple] = {}  # (label, fy) -> (value, unit)
