@@ -8,6 +8,8 @@ The brief's two main components:
 1. **Agentic RAG** — a multi-tool agent with a self-correcting loop (not a fixed pipeline).
 2. **Evaluation** — golden-set scoring of the RAG triad *and* the agent trajectory, plus drift / regression monitoring.
 
+> 📚 **Full walkthrough:** [`docs/guide/`](docs/guide/README.md) is a building-block-by-building-block tour — data foundation, retrieval, the agent, evaluation, deployment, and the design decisions behind each.
+
 ---
 
 ## 1. The Agentic RAG
@@ -42,8 +44,9 @@ isn't grounded (Self-RAG), then a **validator** checks every figure.
 Runs the agent over a **golden set** and scores both the answer and the *agentic* behavior:
 
 **Answer quality (RAG triad + fidelity), per item:**
-- `numeric_exact` (deterministic) — contains the exact XBRL figure.
+- `numeric_exact` (deterministic) — contains the exact XBRL figure (one item per FY 2021–2025).
 - `retrieval_hit` (deterministic) — retrieval surfaced a relevant passage.
+- `year_scope_accuracy` (deterministic) — year-scoped questions retrieve from the named filing year.
 - `groundedness`, `answer_relevance` (LLM-judge) — the RAG triad.
 - `validator_pass` — every figure grounded in a tool output.
 
@@ -56,10 +59,10 @@ Runs the agent over a **golden set** and scores both the answer and the *agentic
 - **regression / silent-failure** — aggregates vs a committed **baseline**; a drop past tolerance is flagged.
 - **data drift** — headline XBRL series scanned for year-over-year moves past tolerance.
 
-**Latest run (gpt-4o-mini, 10 items):** numeric_exact, retrieval_hit, groundedness,
-validator, tool_accuracy = **1.0**; answer_relevance 0.95; trajectory
-appropriateness 0.90 / efficiency 0.88 / faithfulness 0.90; 0 regressions; 3 drift
-flags (e.g. Net income +31.5% FY22→FY23 — a real rate-cycle jump).
+**Latest run (gpt-4o-mini, 16 items, all 5 fiscal years):** numeric_exact,
+retrieval_hit, year_scope_accuracy, validator, groundedness, faithfulness = **1.0**;
+answer_relevance 0.99; tool_appropriateness 0.94; trajectory_efficiency 0.88; 0
+regressions; 3 drift flags (e.g. Net income +31.5% FY22→FY23 — a real rate-cycle jump).
 
 **Auto-triggerable** (cron / scheduler):
 ```bash

@@ -5,11 +5,13 @@ model is given **tools** and decides — per query — which to call and in what
 (the router), calls them in a loop, then answers. A **validator** then checks that
 every headline financial figure in the answer matches an exact XBRL fact.
 
-Two tools:
+Three tools:
 - ``lookup_financial_fact`` — the EXACT figure JPMorgan filed in XBRL (FY2021-2025).
   The agent is told to use this for any number, so figures never come from the model.
-- ``search_filings`` — BM25 narrative retrieval over the parsed FY2024 10-K, with
-  page citations.
+- ``compute_change`` — the EXACT difference / % change between two years, computed
+  deterministically from XBRL (never LLM arithmetic).
+- ``search_filings`` — hybrid (dense + sparse) narrative retrieval over the parsed
+  FY2021-2025 10-Ks, with fiscal-year + page citations and optional year scoping.
 
 ``run_agent`` returns the answer plus a full trace (which tools were called with
 what arguments) and the validator verdict — both surfaced in the UI and scored by
