@@ -1,6 +1,12 @@
 """Streamlit app — Agentic RAG chat over JPMorgan's 10-Ks + an Evaluation dashboard.
 
 Run:  streamlit run app/ui.py   (needs OPENAI_API_KEY in env or .env)
+
+Layout note: the views are switched with a **sidebar selector**, not `st.tabs`. That is
+deliberate — `st.chat_input` only pins to the bottom of the page when it lives in the
+main body; nested inside `st.tabs` it renders inline and appears to "move" as the
+conversation grows. With the selector, the Chat view's input is top-level → pinned at the
+bottom, with messages and the agent's thinking bubble flowing above it (a normal chat).
 """
 
 import json
@@ -38,9 +44,8 @@ st.caption(
     f"Elements + exact XBRL facts across {N_YEARS} fiscal years."
 )
 
-chat_tab, eval_tab = st.tabs(["💬 Chat", "📈 Evaluation"])
 
-
+# ----------------------------------------------------------------- render helpers
 def _render_sources(sources) -> None:
     if not sources:
         return
@@ -71,8 +76,21 @@ def _render_agent_result(result: dict) -> None:
     _render_sources(result["sources"])
 
 
-# ----------------------------------------------------------------- Chat tab
-with chat_tab:
+def _load_last_report() -> dict | None:
+    path = Path(__file__).resolve().parent.parent / "eval" / "last_report.json"
+    if path.is_file():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return None
+
+
+# ----------------------------------------------------------------- view selector
+view = st.sidebar.radio(
+    "View", ["💬 Chat", "📈 Evaluation"], label_visibility="collapsed", key="view"
+)
+
+
+# =================================================================== Chat view
+if view == "💬 Chat":
     with st.sidebar:
         st.header("Try asking")
         st.markdown(
@@ -84,14 +102,16 @@ with chat_tab:
         )
         st.divider()
         st.caption(
-            "Numbers: exact `us-gaap` XBRL facts via a tool. "
-            "Narrative: hybrid retrieval over parsed FY2021-2025 Elements. "
+            "Numbers: exact `us-gaap` XBRL facts via DuckDB. "
+            "Narrative: hybrid retrieval (Qdrant + BM25) over parsed FY2021-2025 Elements. "
             "Agent + validator: OpenAI tool-calling."
         )
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
+    # History renders into the main body; the chat_input below is top-level, so it stays
+    # pinned to the bottom of the page with these messages flowing above it.
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             if message["role"] == "assistant":
@@ -114,15 +134,8 @@ with chat_tab:
         st.session_state.messages.append({"role": "assistant", "result": result})
 
 
-# ----------------------------------------------------------- Evaluation tab
-def _load_last_report() -> dict | None:
-    path = Path(__file__).resolve().parent.parent / "eval" / "last_report.json"
-    if path.is_file():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return None
-
-
-with eval_tab:
+# ============================================================= Evaluation view
+else:
     st.subheader("Evaluation — does the Agentic RAG actually perform?")
     st.caption(
         "Runs the agent over a golden set and scores the RAG triad + agentic "
