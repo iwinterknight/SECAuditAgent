@@ -32,8 +32,10 @@ from functools import lru_cache
 
 import numpy as np
 from openai import OpenAI
+from qdrant_client import QdrantClient
 from rank_bm25 import BM25Okapi
 
+import vector_store
 from answer import _tokens
 from config.schema import Element, ElementKind
 from config.settings import get_settings
@@ -118,18 +120,16 @@ def _embed_texts(client: OpenAI, texts: list[str]) -> np.ndarray:
 
 
 @lru_cache(maxsize=1)
-def _index() -> tuple[list[Element], BM25Okapi, np.ndarray, np.ndarray]:
-    """Load every parsed filing's Elements + per-**sub-chunk** embeddings (per-filing
-    cache, so a newly parsed year only embeds itself), concatenated into one hybrid
-    index.
-
-    Returns ``(elements, bm25_over_full_element_text, sub_chunk_matrix, owner)`` where
-    ``owner[j]`` is the index (into ``elements``) of the Element that sub-chunk ``j``
-    belongs to — so a sub-chunk hit maps back to its Element for scoring + citation."""
+def _index() -> tuple[list[Element], BM25Okapi, QdrantClient]:
+    """Load every parsed filing's Elements + per-sub-chunk embeddings (per-filing cache,
+    so a newly parsed year only embeds itself), and build the query-time stores: a BM25
+    index over full Element text + an embedded **Qdrant** collection holding every
+    sub-chunk vector with an Element-metadata payload. Returns
+    ``(elements, bm25, qdrant_client)``."""
     settings = get_settings()
     derived = settings.derived_dir / "ingestion"
     all_elements: list[Element] = []
-    chunk_owner: list[int] = []
+    all_payloads: list[dict] = []
     all_embeddings: list[np.ndarray] = []
     client: OpenAI | None = None
     for filing in settings.FILINGS:
@@ -138,7 +138,7 @@ def _index() -> tuple[list[Element], BM25Okapi, np.ndarray, np.ndarray]:
             continue
         elements = [e for e in read_jsonl(path, Element) if len(e.text) > 40]
         # Expand each Element into its dense sub-chunks (deterministic), tracking the
-        # owning Element so a sub-chunk hit maps back for scoring + parent-expansion.
+        # owning Element so a sub-chunk hit maps back to its Element + metadata.
         chunk_texts: list[str] = []
         owner_local: list[int] = []
         for local_idx, element in enumerate(elements):
@@ -153,8 +153,19 @@ def _index() -> tuple[list[Element], BM25Okapi, np.ndarray, np.ndarray]:
             cache.parent.mkdir(parents=True, exist_ok=True)
             np.save(cache, embeddings)
         base = len(all_elements)
+        for local_idx in owner_local:
+            element = elements[local_idx]
+            all_payloads.append(
+                {
+                    "owner": base + local_idx,
+                    "fiscal_year": element.fiscal_year,
+                    "page": element.page,
+                    "item": element.item,
+                    "kind": element.kind.value,
+                    "source_filing": element.source_filing,
+                }
+            )
         all_elements.extend(elements)
-        chunk_owner.extend(base + li for li in owner_local)
         all_embeddings.append(embeddings)
     matrix = (
         np.vstack(all_embeddings).astype(np.float32)
@@ -162,12 +173,13 @@ def _index() -> tuple[list[Element], BM25Okapi, np.ndarray, np.ndarray]:
         else np.zeros((0, 1), dtype=np.float32)
     )
     bm25 = BM25Okapi([_tokens(e.text) for e in all_elements])
-    return all_elements, bm25, matrix, np.asarray(chunk_owner, dtype=np.int64)
+    qdrant = vector_store.build(matrix, all_payloads)
+    return all_elements, bm25, qdrant
 
 
 def build_index() -> int:
-    """Force-build the embedding cache (used by the one-time build step). Returns n."""
-    elements, _bm25, _matrix, _owner = _index()
+    """Force-build the embedding cache + query-time stores (one-time build). Returns n."""
+    elements, _bm25, _qdrant = _index()
     return len(elements)
 
 
@@ -197,9 +209,9 @@ def hybrid_search(
     query: str, k: int = 8, expand: bool = True, fiscal_year: int | None = None
 ) -> list[Element]:
     """Top-k Elements by RRF(dense, sparse), optionally scoped to one fiscal year and
-    parent-expanded. The dense side scores each Element by its best sub-chunk, so a long
-    Element is found by whichever of its parts matches — no part is truncated out."""
-    elements, bm25, chunk_matrix, chunk_owner = _index()
+    parent-expanded. The dense side is served by **Qdrant** over the sub-chunk vectors:
+    an Element ranks by its best-matching sub-chunk, so no long Element is truncated out."""
+    elements, bm25, qdrant = _index()
 
     sparse_rank = np.argsort(bm25.get_scores(_tokens(query)))[::-1]
 
@@ -208,13 +220,9 @@ def hybrid_search(
         dtype=np.float32,
     )
     q /= np.linalg.norm(q) + 1e-9
-    # Max-pool sub-chunk similarities up to their owning Element: an Element's dense
-    # score is its single best-matching sub-chunk.
-    chunk_scores = chunk_matrix @ q
-    elem_scores = np.full(len(elements), -np.inf, dtype=np.float32)
-    if chunk_owner.size:
-        np.maximum.at(elem_scores, chunk_owner, chunk_scores)
-    dense_rank = np.argsort(elem_scores)[::-1]
+    # Dense candidates from Qdrant: top sub-chunks (year-filtered via payload when a year
+    # is given), de-duplicated up to their owning Element, best match first.
+    dense_rank = vector_store.dense_elements(qdrant, q, limit=300, fiscal_year=fiscal_year)
 
     rrf: dict[int, float] = {}
     for rank, idx in enumerate(sparse_rank[:80]):
