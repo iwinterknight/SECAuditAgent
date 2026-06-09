@@ -108,3 +108,28 @@ Compose into a presentation-ready summary with `/collate`.
 - **Sayable:** "We integrated the designed two-store architecture, proved via the eval it costs nothing, and verified it end-to-end through to the running container."
 - **Cluster:** Build & retrieval internals
 - **Source:** eval/last_report.json, tests/unit/, Dockerfile
+
+### [14] The 8 headline metrics — the agent's numeric vocabulary
+- **Category:** data-ingestion
+- **Fact:** The agent answers numbers over **8 curated headline metrics** (the `_HEADLINE` table, also the tools' `metric` enum): **4 balance-sheet / `instant`** — Total assets, Total liabilities, Total stockholders' equity, Total deposits; **4 income-statement / `duration`** — Net income, Total net revenue, Net interest income, Diluted EPS. Each maps to one **dimensionless, consolidated `us-gaap` concept**, materialized as **8 × 5 = 40 exact rows** queried from DuckDB at startup.
+- **Insight:** They're the "at-a-glance" figures most asked about, and each resolves to a single unambiguous concept (so the lookup returns one exact number, not a dimensional sub-figure). The full filing has **~1,098 concepts / 36,046 facts** — we expose 8; widening coverage is literally "add a row to `_HEADLINE`."
+- **What it means for the build:** this is the *scope* of the system's exact-number answers — `lookup_financial_fact` and `compute` operate over these 8 (the other ~1,000 concepts live in DuckDB but aren't yet exposed to the agent).
+- **Sayable:** "The agent's numbers are 8 headline metrics — 4 balance-sheet, 4 income-statement — each a single dimensionless us-gaap concept, 40 exact rows from DuckDB; the rest of the ~1,000 tagged concepts are in DuckDB but not yet surfaced."
+- **Cluster:** Build & retrieval internals
+- **Source:** app/answer.py (`_HEADLINE`)
+
+### [15] The compute tool — 10 deterministic operations (no LLM math)
+- **Category:** agent
+- **Fact:** One `compute` tool exposes **10 deterministic operations**: over a metric across years — change, percent_change, cagr, average, sum, min, max; between two metrics in a year — ratio, percent_of, difference. **All arithmetic runs in Python** (additive ops exact via `Decimal`; growth/ratios rounded for display); the model only picks the operation + args.
+- **Insight:** Replaces the earlier two-op `compute_change`, closing the "what about other calculations?" gap. The **validator was tightened** to also catch decimals / per-share / percentages (not just comma-grouped amounts), so a hand-computed ratio can't slip past — bare integers (years/pages) still ignored. The "no LLM arithmetic" firewall is preserved.
+- **Sayable:** "Any arithmetic goes through one compute tool with ten deterministic operations — the model picks the op, Python does the math exactly — never the LLM; and the validator now catches ratios/percentages too."
+- **Cluster:** Build & retrieval internals
+- **Source:** app/agent.py (`_tool_compute`); tests/unit/test_compute.py
+
+### [16] The RAG evaluation triad — all three legs, LLM-judged
+- **Category:** evaluation
+- **Fact:** The RAG triad is scored by an LLM judge with the **three canonical legs**: **context_relevance** (is the retrieved context relevant to the query, vs off-topic noise?), **groundedness/faithfulness** (is the answer rooted in that context — no invented/distorted facts?), **answer_relevance** (does it address the query?). Earlier only groundedness + answer_relevance were judged and context relevance was a deterministic *proxy* — now it's a proper judged leg; `retrieval_hit`/`year_scope` stay on as complementary deterministic retrieval checks.
+- **Insight:** Completes the canonical triad (TruLens/RAGAS-style). It sits alongside the **trajectory judge** (tool_appropriateness, efficiency, faithfulness — the *agentic* counterpart), the deterministic scorers (numeric_exact, validator, year_scope), and the **monitoring** (regression vs baseline + YoY data-drift).
+- **Sayable:** "We score the full RAG triad with an LLM judge — context relevance, groundedness, answer relevance — plus a separate trajectory judge for the agent's tool-use path, on top of deterministic exact-match scorers and regression/drift monitoring."
+- **Cluster:** Evaluation
+- **Source:** app/evaluate.py (`_judge`, `_judge_trajectory`)
