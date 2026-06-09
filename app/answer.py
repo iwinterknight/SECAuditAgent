@@ -1,23 +1,23 @@
 """Minimal RAG answer engine over the JPMorgan Chase 10-K derived corpus.
 
 Narrative: BM25 keyword retrieval over the FY2024 Elements (parsed 10-K text,
-tables, headings). Numbers: an authoritative *headline-facts table* built from the
-exact XBRL facts (FY2021-FY2025) — the figures JPMorgan actually filed. An OpenAI
-model synthesizes a grounded, cited answer, and is instructed to quote financial
-figures verbatim from the XBRL table (the fidelity rule: numbers never come from
-the model).
+tables, headings). Numbers: an authoritative *headline-facts table* served from a
+**DuckDB** store over the exact XBRL facts (FY2021-FY2025) — the figures JPMorgan
+actually filed. An OpenAI model synthesizes a grounded, cited answer, and is
+instructed to quote financial figures verbatim from the XBRL table (the fidelity
+rule: numbers never come from the model).
 """
 
 from __future__ import annotations
 
 import os
-from datetime import date
 from functools import lru_cache
 
 from openai import OpenAI
 from rank_bm25 import BM25Okapi
 
-from config.schema import Element, PeriodType, XBRLFact
+import duckdb_store
+from config.schema import Element, PeriodType
 from config.settings import get_settings
 from ingestion.serialize import read_jsonl
 
@@ -43,7 +43,7 @@ _NARRATIVE_ACCESSION = "0000019617-25-000270"  # FY2024
 _MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 # Headline metrics quoted in the demo. The exact values come from these XBRL
-# facts, never from the model. (concept, human label, period shape.)
+# facts (served by DuckDB), never from the model. (concept, human label, period shape.)
 _HEADLINE = [
     ("us-gaap:Assets", "Total assets", PeriodType.INSTANT),
     ("us-gaap:Liabilities", "Total liabilities", PeriodType.INSTANT),
@@ -73,34 +73,13 @@ def _tokens(text: str) -> list[str]:
     return text.lower().split()
 
 
-def _headline_fact(
-    facts: list[XBRLFact], concept: str, period_type: PeriodType, fiscal_year: int
-) -> XBRLFact | None:
-    """The single consolidated, dimensionless fact for a concept in a fiscal year."""
-    for fact in facts:
-        if (
-            fact.concept != concept
-            or fact.entity.value != "JPMC_CONSOLIDATED"
-            or fact.dimensions
-            or fact.period_type is not period_type
-        ):
-            continue
-        if period_type is PeriodType.INSTANT and fact.period_instant == date(
-            fiscal_year, 12, 31
-        ):
-            return fact
-        if (
-            period_type is PeriodType.DURATION
-            and fact.period_start == date(fiscal_year, 1, 1)
-            and fact.period_end == date(fiscal_year, 12, 31)
-        ):
-            return fact
-    return None
-
-
 @lru_cache(maxsize=1)
 def load_corpus() -> tuple[list[Element], BM25Okapi, dict]:
-    """Load Elements + BM25 index + the headline-facts table (built once)."""
+    """Load Elements + BM25 index + the headline-facts table (built once).
+
+    Narrative Elements come from the parsed PDF JSONL; the headline numbers are served
+    by the **DuckDB** fact store (``duckdb_store.headline_value`` — the consolidated,
+    dimensionless fact per concept/year), so the numeric path runs through SQL truth."""
     settings = get_settings()
     derived = settings.derived_dir / "ingestion"
 
@@ -113,14 +92,12 @@ def load_corpus() -> tuple[list[Element], BM25Okapi, dict]:
 
     table: dict[tuple[str, int], tuple] = {}  # (label, fy) -> (value, unit)
     for filing in settings.FILINGS:
-        facts_path = derived / "facts" / f"{filing.accession}.jsonl"
-        if not facts_path.is_file():
-            continue
-        facts = read_jsonl(facts_path, XBRLFact)
         for concept, label, period_type in _HEADLINE:
-            fact = _headline_fact(facts, concept, period_type, filing.fiscal_year)
-            if fact is not None:
-                table[(label, filing.fiscal_year)] = (fact.value, fact.unit)
+            value_unit = duckdb_store.headline_value(
+                concept, period_type, filing.fiscal_year
+            )
+            if value_unit is not None:
+                table[(label, filing.fiscal_year)] = value_unit
     return elements, bm25, table
 
 
