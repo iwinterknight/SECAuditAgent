@@ -122,13 +122,21 @@ and in `docs/architecture.md`. Changing one is a constitution-level change
 | Version control | One git repo here; **Git LFS** versions the 10-K PDFs |
 | Models | **Hybrid** — local/open embeddings + a cloud LLM for generation & validation |
 | Numeric ground truth | **EDGAR XBRL** facts alongside the PDFs (machine-readable figures) |
-| Orchestration | **LangGraph** (consistent with RFI) |
-| Vector store | **Qdrant** (Docker, local) |
-| Structured store | **DuckDB** over XBRL facts |
+| Orchestration | **LangGraph** *(planned)* — the **demo shipped raw OpenAI tool-calling** (a hand-written loop) instead |
+| Vector store | **Qdrant** — the demo runs it **embedded / in-process**, not as a Docker server |
+| Structured store | **DuckDB** over XBRL facts — shipped (embedded) |
 
 Still open (pinned in the relevant module's plan): exact embedding model,
-exact cloud LLM provider, parser (Docling vs Unstructured), the
-restatement source-of-truth default (see Constitution §1.3).
+exact cloud LLM provider, the restatement source-of-truth default (see
+Constitution §1.3). *Parser settled on **Docling**.*
+
+> **Build status (the shipped demo).** M1 ingestion is built; on top of it a focused **serving
+> layer** shipped — Agentic RAG + Evaluation + a Streamlit UI + a verified Docker image — with
+> three deliberate divergences from the plan above: **raw OpenAI tool-calling** (not LangGraph),
+> **embedded** DuckDB + Qdrant (not a Qdrant Docker server), and structure-based **sub-chunks**
+> (not the full M2 hierarchical chunker). It scopes answers to the **consolidated** registrant
+> (subsidiary facts are kept distinct but unexposed, §1.3). See `README.md` and `docs/guide/06`–`07`.
+> The M2 / M4–M10 modules below remain the **plan**, not all built.
 
 ---
 

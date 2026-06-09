@@ -9,6 +9,13 @@ not built yet. `docs/roadmap.md` tracks which ones exist. When a module
 spec refines a boundary here, update this doc in the same change (Constitution
 §6.7).
 
+> **Demo status / divergences.** The shipped demo realizes this map with three deliberate,
+> time-boxed substitutions: the agent is **raw OpenAI tool-calling**, not **LangGraph**;
+> **DuckDB + Qdrant run embedded / in-process**, not as a Qdrant Docker server; and retrieval uses
+> structure-based **sub-chunks**, not the full M2 hierarchical chunker. Answers are scoped to the
+> **consolidated** registrant (§1.3). The stack and rows below are the *ratified plan* — for what
+> actually shipped, see `README.md` and `docs/guide/`.
+
 ---
 
 ## 1. The system in one picture

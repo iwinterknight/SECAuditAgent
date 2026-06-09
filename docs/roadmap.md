@@ -10,6 +10,13 @@ you parse. The answer engine (M1–M6) comes first, the trust engine (M7–M8)
 wraps it, then UI (M9) and cloud (M10) — exactly the order the lead asked
 for: **core modules first, UI second-to-last, cloud last.**
 
+> **Demo status.** **M1** (ingestion) is built. A focused **serving layer** then shipped — Agentic
+> RAG + Evaluation + a Streamlit UI + a verified Docker image — collapsing parts of M2–M9 with
+> deliberate substitutions: **embedded** DuckDB + Qdrant (the M3 stores, in-process, in `app/`),
+> structure-based **sub-chunks** (vs the full M2 chunker), **raw OpenAI tool-calling** (vs M5
+> LangGraph), and an in-app eval (M7/M8). The milestones below remain the *itinerary*; not all are
+> built as written. See `README.md`.
+
 Status legend: `done` · `in-progress` · `planned` · `blocked`.
 
 ---
@@ -21,7 +28,7 @@ Status legend: `done` · `in-progress` · `planned` · `blocked`.
 | **M0** | Scaffolding & SDD framework | — / `config/` | everything | **done** |
 | **M1** | Ingestion & parsing | `ingestion/` | M2, the XBRL store | planned |
 | **M2** | Chunking & enrichment | `chunking/` | M3 | planned |
-| **M3** | Index builders | `index/` | M4, the calc tool | planned |
+| **M3** | Index builders | `index/` | M4, the calc tool | **demo: embedded in `app/`** |
 | **M4** | Retrieval | `retrieval/` | M5 | planned |
 | **M5** | Agent (router · tools · validator) | `agent/` | M6, real answers | planned |
 | **M6** | API / chat surface | `api/` | M7 telemetry, M9 | planned |
