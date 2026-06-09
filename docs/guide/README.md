@@ -13,6 +13,7 @@ trade-off) before the *what* (the code), so you can present at any level of deta
 | 04 | [Evaluation](04-evaluation.md) | Golden set, RAG triad, trajectory LLM-judge, year coverage, drift + regression, auto-trigger |
 | 05 | [Deployment](05-deployment.md) | The Streamlit chat UI and the bake-once-reuse Docker image |
 | 06 | [Decisions & lessons](06-decisions-and-lessons.md) | The fidelity philosophy, the SDD framework, the memory/OOM saga, trade-offs |
+| 07 | [The stores](07-stores.md) | DuckDB (facts) + Qdrant (vectors), now integrated & **embedded** — supersedes the "planned M3" framing in earlier docs |
 
 ### Where the code lives
 

@@ -35,8 +35,9 @@ query
   tokens of every Element. Classic TF-IDF-family lexical scoring.
 - **Dense** — each Element is first split into bounded **sub-chunks** (a long table or
   paragraph would otherwise be truncated into one diluted vector); every sub-chunk is
-  embedded with OpenAI `text-embedding-3-small` (L2-normalized), and an Element is scored
-  by its **best** sub-chunk (max-pool). Tables split row-wise with the header repeated so
+  embedded with OpenAI `text-embedding-3-small` (L2-normalized) and indexed in **Qdrant**
+  (the vector store — doc 07); an Element is scored by its **best**-matching sub-chunk.
+  Tables split row-wise with the header repeated so
   each piece is self-describing; prose splits into overlapping windows. The query is
   embedded the same way — similarity is a dot product. *(Sub-chunks are a dense-index
   detail; ranking, citations, the year filter and parent-expansion all stay at the
