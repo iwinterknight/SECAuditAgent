@@ -1,9 +1,9 @@
 # TECHNICAL REPORT: AGENTIC RAG OVER FINANCIAL FILINGS (JPMORGAN 10-K)
 ### A System Architecture, Evaluation, and Code-Walkthrough Guide for Data-Science Teams
 
-> Each section has the same shape: a **Visual**, the **Key Technical Points**, **Speaker Cue
-> Cards** (what to say), and a **Source-Code Walkthrough** (which file/symbol to open). Code
-> references and claims here match the shipped code.
+> Each section has the same shape: a **Visual**, the **Key Technical Points**, and a
+> **Source-Code Walkthrough** (which file/symbol to open). Code references and claims here
+> match the shipped code.
 
 ---
 
@@ -387,4 +387,4 @@
 
 ---
 
-*Companion artifacts: slide deck `docs/presentation/report.pdf`, speaker cue-card `docs/presentation/speaker-cues.pdf`, full code walkthrough `docs/guide/` (00–07), and the source notes in `docs/presentation/collated-context.md`.*
+*Companion artifacts: slide deck `docs/presentation/report.pdf`, full code walkthrough `docs/guide/` (00–07), and the source notes in `docs/presentation/collated-context.md`.*
