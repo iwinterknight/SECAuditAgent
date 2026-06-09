@@ -152,16 +152,18 @@ else:
     else:
         agg = report["aggregate"]
         st.caption(f"Run: {report['timestamp']} · {report['n_items']} items · {report['model']}")
-        st.markdown("**Answer quality — RAG triad + numeric fidelity**")
-        row1 = st.columns(4)
+        st.markdown("**RAG triad — LLM-judged**")
+        triad = st.columns(3)
+        triad[0].metric("Context relevance", agg.get("context_relevance"))
+        triad[1].metric("Groundedness", agg.get("groundedness"))
+        triad[2].metric("Answer relevance", agg.get("answer_relevance"))
+        st.markdown("**Fidelity & retrieval — deterministic**")
+        row1 = st.columns(5)
         row1[0].metric("Numeric exactness", agg.get("numeric_exact"))
         row1[1].metric("Retrieval hit-rate", agg.get("retrieval_hit_rate"))
         row1[2].metric("Year-scope accuracy", agg.get("year_scope_accuracy"))
         row1[3].metric("Validator pass-rate", agg.get("validator_pass_rate"))
-        row2 = st.columns(3)
-        row2[0].metric("Groundedness", agg.get("groundedness"))
-        row2[1].metric("Answer relevance", agg.get("answer_relevance"))
-        row2[2].metric("Tool-use accuracy", agg.get("tool_accuracy"))
+        row1[4].metric("Tool-use accuracy", agg.get("tool_accuracy"))
         st.markdown("**Agent trajectory — LLM-judge over the tool-use path**")
         row3 = st.columns(3)
         row3[0].metric("Tool appropriateness", agg.get("tool_appropriateness"))
@@ -192,6 +194,7 @@ else:
                         "numeric_exact": it.get("numeric_exact"),
                         "retrieval_hit": it.get("retrieval_hit"),
                         "tool_correct": it.get("tool_correct"),
+                        "ctx_rel": round(it.get("context_relevance", 0), 2),
                         "grounded": round(it.get("groundedness", 0), 2),
                         "relevant": round(it.get("relevance", 0), 2),
                         "traj_approp": round(it.get("tool_appropriateness", 0), 2),

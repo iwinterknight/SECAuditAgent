@@ -35,8 +35,8 @@ its `kind` and what success means:
 
 **Coverage of all 5 years is deliberate** (it's what prompted the latest work): one
 exact-figure item per fiscal year (total assets FY2021→FY2025), plus other metrics,
-plus a cross-year `compute`, plus two **year-scoped** narrative items, plus
-refusal — **16 items** spanning every filing.
+plus cross-year & average `compute` items, plus two **year-scoped** narrative items, plus
+refusal — **17 items** spanning every filing.
 
 ## Three layers of scoring
 
@@ -53,14 +53,17 @@ Run on every item; the bedrock of the eval because they have no judge variance:
 
 ### Layer 2 — the RAG triad (LLM-as-judge)
 
-The classic triad, scored by a judge model reading the question, answer, and evidence:
+The full triad, scored by a judge model reading the question, the retrieved context, and
+the answer:
 
-- **`groundedness`** — is every claim supported by the retrieved/tool evidence? (catches
-  hallucination)
-- **`answer_relevance`** — does the answer actually address the question? (catches
-  on-topic-but-evasive)
-- (The third triad leg, *context relevance*, is covered deterministically by
-  `retrieval_hit` + `year_scope_ok`.)
+- **`context_relevance`** — is the retrieved CONTEXT relevant to the question (vs off-topic
+  noise the model could weave into a hallucination)?
+- **`groundedness`** (faithfulness) — is the answer fully rooted in that context (no
+  invented, exaggerated, or distorted facts)?
+- **`answer_relevance`** — does the answer directly and helpfully address the question?
+
+(`retrieval_hit` + `year_scope_ok` from Layer 1 stay on as complementary *deterministic*
+retrieval checks — a keyword/recall signal alongside the judged context relevance.)
 
 ### Layer 3 — the trajectory judge (LLM-as-judge over the *path*)
 
@@ -96,12 +99,12 @@ python app/evaluate.py     # writes eval/last_report.json + eval/runs/<timestamp
 No UI needed — it's a plain CLI, so it drops into cron / CI / a scheduler. The UI's
 Evaluation tab (doc 05) renders the same `last_report.json`.
 
-## Latest run — 16 items, all 5 fiscal years
+## Latest run — 17 items, all 5 fiscal years
 
 ```
 numeric_exact 1.0 · retrieval_hit 1.0 · year_scope_accuracy 1.0 · validator 1.0
-groundedness 1.0 · answer_relevance 0.99 · tool_appropriateness 0.94
-trajectory_efficiency 0.88 · answer_faithfulness 1.0
+context_relevance 1.0 · groundedness 1.0 · answer_relevance 1.0   ← the RAG triad
+tool_appropriateness 0.94 · trajectory_efficiency 0.88 · answer_faithfulness 0.99
 regression: none · data-drift: 3 flagged (real YoY moves)
 ```
 

@@ -8,7 +8,7 @@ scores five things that together cover the RAG triad *and* the agentic behaviour
 - **tool_correct** (agentic) — did the agent route to the right tool (numeric ->
   fact tool, narrative -> search)?
 - **retrieval_hit** (deterministic) — did retrieval surface a relevant passage?
-- **groundedness** / **answer_relevance** (LLM-judge) — the classic RAG triad.
+- **context_relevance** / **groundedness** / **answer_relevance** (LLM-judge) — the RAG triad.
 
 On top of per-run scoring it adds the *monitoring* the brief asks for:
 
@@ -86,11 +86,14 @@ GOLDEN: list[dict[str, Any]] = [
 ]
 
 _JUDGE = (
-    "You grade a financial QA system. Given the QUESTION, the CONTEXT the system "
-    "was given, and its ANSWER, rate two things from 0.0 to 1.0:\n"
-    "- groundedness: is the answer supported by the context (no invented facts)?\n"
-    "- relevance: does the answer address the question?\n"
-    'Respond ONLY as JSON: {"groundedness": <float>, "relevance": <float>}'
+    "You grade a financial QA system on the RAG triad. Given the QUESTION, the CONTEXT "
+    "the system retrieved/looked-up, and its ANSWER, rate each from 0.0 to 1.0:\n"
+    "- context_relevance: is the retrieved CONTEXT relevant to the question (vs off-topic "
+    "noise that could mislead the model)?\n"
+    "- groundedness: is the ANSWER fully supported by the CONTEXT (no invented, "
+    "exaggerated, or distorted facts)?\n"
+    "- relevance: does the ANSWER directly and helpfully address the question?\n"
+    'Respond ONLY as JSON: {"context_relevance": <f>, "groundedness": <f>, "relevance": <f>}'
 )
 
 
@@ -107,10 +110,11 @@ def _judge(client: OpenAI, question: str, context: str, answer: str) -> dict[str
             ],
         )
         data = json.loads(resp.choices[0].message.content or "{}")
-        return {"groundedness": float(data.get("groundedness", 0.0)),
+        return {"context_relevance": float(data.get("context_relevance", 0.0)),
+                "groundedness": float(data.get("groundedness", 0.0)),
                 "relevance": float(data.get("relevance", 0.0))}
     except Exception:  # noqa: BLE001 - a judge failure must not crash the suite
-        return {"groundedness": 0.0, "relevance": 0.0}
+        return {"context_relevance": 0.0, "groundedness": 0.0, "relevance": 0.0}
 
 
 _TRAJECTORY_JUDGE = (
@@ -215,6 +219,7 @@ def _aggregate(items: list[dict]) -> dict[str, float]:
         "numeric_exact": mean("numeric_exact", {"numeric"}),
         "tool_accuracy": mean("tool_correct"),
         "retrieval_hit_rate": mean("retrieval_hit", {"narrative"}),
+        "context_relevance": mean("context_relevance"),
         "groundedness": mean("groundedness"),
         "answer_relevance": mean("relevance"),
         "validator_pass_rate": mean("validator_grounded"),
