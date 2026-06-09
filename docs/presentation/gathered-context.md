@@ -133,3 +133,35 @@ Compose into a presentation-ready summary with `/collate`.
 - **Sayable:** "We score the full RAG triad with an LLM judge — context relevance, groundedness, answer relevance — plus a separate trajectory judge for the agent's tool-use path, on top of deterministic exact-match scorers and regression/drift monitoring."
 - **Cluster:** Evaluation
 - **Source:** app/evaluate.py (`_judge`, `_judge_trajectory`)
+
+### [17] Agent — the loop & framework (crucial point)
+- **Category:** agent
+- **Fact:** The agent is **raw OpenAI tool-calling** — a hand-written loop (`_tool_loop`), **no LangGraph/LangChain**. Per question the model **routes** via `tool_choice="auto"` (temperature 0 → deterministic) across **≤4 steps**, calling tools and reading their results before answering. It's a **single agent with 3 flat, always-visible tools** — **no sub-agents, no progressive disclosure**.
+- **Insight:** For a 3-tool focused domain, a transparent ~40-line loop beats a framework: full control, no heavy dependency, and the trajectory is a plain inspectable list — which is exactly what makes it *evaluable*. Sub-agents / progressive disclosure earn their keep only at many-tool or isolated-context scale (which we don't have).
+- **Sayable:** "It's raw OpenAI tool-calling — a hand-written ~40-line loop, no LangGraph — one agent, three flat tools, deterministic routing; transparent and directly scorable."
+- **Cluster:** Agent
+- **Source:** app/agent.py (`_tool_loop`, `_TOOLS`, `run_agent`)
+
+### [18] Agent — fidelity & control (crucial point)
+- **Category:** agent
+- **Fact:** Three tools: `lookup_financial_fact` (exact XBRL via **DuckDB**), `compute` (10 deterministic ops, **no LLM math**), `search_filings` (hybrid **Qdrant** + BM25). Two rules encoded in the prompt *and* code: **numbers only from tools** and **no LLM arithmetic**. A deterministic **validator** then checks every figure in the answer traces to a tool output (the §1.2 firewall at runtime); a **Self-RAG reflect→revise** pass (actor–critic) lets a critic flag gaps for the agent to fix; and a **refusal path** declines when no tool can answer.
+- **Insight:** The model **orchestrates but never sources or computes a number** — tools do, and the validator makes "can't hallucinate/hand-compute a figure" structural, not hopeful. Everything it does (`trace`, `sources`, `tool_outputs`, `reflection`, `validation`) is returned → observable → evaluable.
+- **Sayable:** "The model orchestrates; it never sources or computes a number — tools do, the validator checks every figure, a reflect→revise pass self-corrects, and it refuses when no tool can answer."
+- **Cluster:** Agent
+- **Source:** app/agent.py (`_validate`, `_reflect`, `_tool_lookup_fact` / `_tool_compute` / `_tool_search`)
+
+### [19] Evaluation — what's scored (crucial point)
+- **Category:** evaluation
+- **Fact:** The eval scores **two surfaces** — the **answer** and the **trajectory** — over a **17-item golden set** (all 5 fiscal years; numeric / narrative / refusal kinds), in **three families**: (1) **deterministic** — numeric_exact, retrieval_hit, tool_correct, year_scope_ok, validator_pass (exact, zero variance, the bedrock); (2) **LLM-judge** — the **RAG triad** (context_relevance, groundedness, answer_relevance) **+** the **trajectory judge** (tool_appropriateness, efficiency, faithfulness — the agentic counterpart over the tool-use path); (3) **monitoring** (entry [20]).
+- **Insight:** A good answer reached by a *wrong path* is a latent bug, so the trajectory is judged too — not just the answer. Deterministic scorers anchor the suite (no judge variance); judges cover open-ended quality. Latest run: triad + numeric + validator all **1.0**.
+- **Sayable:** "We score the answer AND the agent's trajectory, over a 17-item golden set, with three families — deterministic exact-match, LLM-judge (the RAG triad + a tool-use-path judge), and monitoring."
+- **Cluster:** Evaluation
+- **Source:** app/evaluate.py (`GOLDEN`, `_score_item`, `_judge`, `_judge_trajectory`, `_aggregate`)
+
+### [20] Evaluation — monitoring, auto-trigger & honest caveats (crucial point)
+- **Category:** evaluation
+- **Fact:** Two monitors: **regression / silent-failure** — compares each aggregate (a mean over the golden items) to a committed **baseline**; a drop **>0.10** is flagged (catches a quiet quality degradation that throws no error); and **data drift** — flags any headline metric moving **>30% year-over-year** (a "human, eyeball this" signal about the *real numbers*, **not** an error). **Auto-triggerable** via `python app/evaluate.py` (cron / CI). Caveats stated upfront: **same-model judge** (gpt-4o-mini judging gpt-4o-mini), **small set** (17 → directional, not tight CIs), judges **fail-safe to 0.0**.
+- **Insight:** Regression is the gate that **proved the DuckDB/Qdrant swap cost no quality**; drift surfaces genuine business moves (e.g. Net income +31.5% FY22→FY23) for confirmation vs an ingestion bug. Stating the caveats is what makes the numbers credible.
+- **Sayable:** "Regression vs a baseline catches silent quality drops — it proved the store swap cost nothing; data-drift flags big year-over-year moves for a human to confirm; it's cron-able, and we're upfront about the same-model-judge caveat."
+- **Cluster:** Evaluation
+- **Source:** app/evaluate.py (`_regression`, `_data_drift`); eval/baseline.json
