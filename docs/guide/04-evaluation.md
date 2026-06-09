@@ -35,7 +35,7 @@ its `kind` and what success means:
 
 **Coverage of all 5 years is deliberate** (it's what prompted the latest work): one
 exact-figure item per fiscal year (total assets FY2021→FY2025), plus other metrics,
-plus a cross-year `compute_change`, plus two **year-scoped** narrative items, plus
+plus a cross-year `compute`, plus two **year-scoped** narrative items, plus
 refusal — **16 items** spanning every filing.
 
 ## Three layers of scoring

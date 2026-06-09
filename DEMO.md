@@ -22,13 +22,13 @@ isn't grounded (Self-RAG), then a **validator** checks every figure.
 | Tool | Backed by | Used for |
 |---|---|---|
 | `lookup_financial_fact(metric, year?)` | **exact XBRL facts** (FY2021–2025) | any financial number — from XBRL, never the model |
-| `compute_change(metric, y1, y2)` | **deterministic math** over XBRL facts | changes / growth / comparisons — exact arithmetic, not LLM math |
+| `compute(operation, metric, …)` | **deterministic math** over XBRL facts | 10 ops — change/%/CAGR, avg/sum/min/max, ratio/%-of/difference; not LLM math |
 | `search_filings(query)` | **hybrid retrieval** (dense + sparse RRF + parent-expansion) over 17,009 Elements across FY2021–2025 | "what does the filing say" |
 
 **The loop (`app/agent.py`):**
 - **Router** — OpenAI tool-calling picks numeric / narrative / both. *"How did total assets change 2021→2025?"* → 5 fact-tool calls.
 - **Self-RAG reflect→revise** — a critic checks the answer is grounded in the tool outputs and complete; if not, the agent gets the critique and another turn (re-search with a sharper query, or look up a missing figure).
-- **Validator** — every number stated must appear in a tool output (an exact XBRL fact or a `compute_change` result); an unmatched number is flagged (catches hallucinated *or hand-computed* figures).
+- **Validator** — every number stated must appear in a tool output (an exact XBRL fact or a `compute` result); an unmatched number is flagged (catches hallucinated *or hand-computed* figures).
 - **Refusal path** — an unanswerable question (e.g. a future share price) → no tools called, declines rather than inventing.
 
 **RAG techniques chosen for 10-Ks (and why):**
@@ -104,7 +104,7 @@ docker run --rm -p 8501:8501 --env-file .env jpm-10k-demo
 ```
 
 ## Try asking
-- *What was net income in 2024, and how does it compare to 2023?* → looks up both + `compute_change`
+- *What was net income in 2024, and how does it compare to 2023?* → looks up both + `compute`
 - *How did total assets change from 2021 to 2025?* → 5-year series
 - *What does JPMorgan say about credit risk?* → cited (FY2024, p.123)
 - *What was the share price on a future date?* → refuses (no fabrication)

@@ -17,14 +17,14 @@ facts *or* call the change tool. That routing is the agent's job.
 | Tool | What it returns | Backed by |
 |---|---|---|
 | `lookup_financial_fact(metric, fiscal_year?)` | the **exact** XBRL figure(s) | the **DuckDB** facts store (docs 01, 07) |
-| `compute_change(metric, from_year, to_year)` | exact **difference + % change** | deterministic arithmetic in Python (over DuckDB facts) |
+| `compute(operation, metric, …)` | 10 ops — change/%/CAGR, avg/sum/min/max, ratio/%-of/difference | deterministic arithmetic in Python over DuckDB facts |
 | `search_filings(query, fiscal_year?)` | narrative passages, FY+page tagged | hybrid: **Qdrant** dense + BM25 (docs 02, 07) |
 
 Two design rules are encoded in the system prompt **and** the code:
 
 - **Numbers only from tools.** *"Use `lookup_financial_fact` for ANY financial number.
   Never state a figure without it."* Figures come from XBRL, not the model.
-- **No LLM arithmetic.** *"Use `compute_change` for ANY change/growth — never do the
+- **No LLM arithmetic.** *"Use `compute` for ANY arithmetic — never do the
   arithmetic yourself."* `_tool_compute` does the subtraction and percentage in Python
   from XBRL values. LLMs are unreliable at exact arithmetic; this removes the risk
   entirely. (The validator below is what *enforces* both rules.)
@@ -62,10 +62,10 @@ grounded = not ungrounded
 ```
 
 Every comma-formatted figure in the answer must be **either** a known headline XBRL
-value **or** literally present in a tool output (an exact lookup or a `compute_change`
+value **or** literally present in a tool output (an exact lookup or a `compute`
 result). Anything else is flagged `ungrounded` — which catches both a *hallucinated*
 number and a *hand-computed* one (the latter is exactly why the agent must call
-`compute_change`). This is the runtime expression of the §1.2 firewall, and the UI
+`compute`). This is the runtime expression of the §1.2 firewall, and the UI
 shows its verdict (✅ / ⚠️) on every answer.
 
 ## Self-RAG — reflect → revise

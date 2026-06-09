@@ -35,7 +35,7 @@ This is the spine of the whole system. Everything else serves it.
   │            (exact figures)           │     │   │  AGENT (OpenAI tool-calling)     │
   │                                      ▼     │   │   router → tools → validator     │
   │              serialize → data/derived/*.jsonl  │   ├─ lookup_financial_fact (XBRL)│
-  │              (deterministic JSONL, gitignored) │   ├─ compute_change   (calc)     │
+  │              (deterministic JSONL, gitignored) │   ├─ compute          (calc)     │
   └───────────────────────────────────────────┘   │   ├─ search_filings   (hybrid)   │
                          │ (baked into the Docker image) │   reflect → revise (Self-RAG)│
                          └───────────────────────────▶   │     │                        │

@@ -8,8 +8,9 @@ every headline financial figure in the answer matches an exact XBRL fact.
 Three tools:
 - ``lookup_financial_fact`` — the EXACT figure JPMorgan filed in XBRL (FY2021-2025).
   The agent is told to use this for any number, so figures never come from the model.
-- ``compute_change`` — the EXACT difference / % change between two years, computed
-  deterministically from XBRL (never LLM arithmetic).
+- ``compute`` — deterministic financial calculations over the figures (change,
+  percent_change, cagr, average, sum, min, max, ratio, percent_of, difference) — every
+  number computed in code, never LLM arithmetic.
 - ``search_filings`` — hybrid (dense + sparse) narrative retrieval over the parsed
   FY2021-2025 10-Ks, with fiscal-year + page citations and optional year scoping.
 
@@ -22,6 +23,7 @@ from __future__ import annotations
 
 import json
 import re
+from decimal import Decimal
 from typing import Any
 
 from openai import OpenAI
@@ -37,9 +39,11 @@ _AGENT_SYSTEM = """You are an agentic financial analyst for JPMorgan Chase & Co.
 You have three tools:
 - lookup_financial_fact(metric, fiscal_year?): the EXACT figure JPMorgan filed in \
 XBRL. Use it for ANY financial number. Never state a figure without it.
-- compute_change(metric, from_year, to_year): the EXACT difference and % change of a \
-metric between two years, computed from XBRL. Use it for ANY change / growth / \
-comparison — never do the arithmetic yourself.
+- compute(operation, metric, ...): EXACT financial calculations done in code (never by \
+you) over the metrics — change / percent_change / cagr / average / sum / min / max over \
+years (metric + from_year/to_year), and ratio / percent_of / difference between two \
+metrics in a year (metric, metric_b, year). Use it for ANY arithmetic — never compute \
+numbers yourself.
 - search_filings(query, fiscal_year?): relevant narrative passages from the 10-Ks \
 (FY2021-2025), each tagged with its fiscal year and page. Pass fiscal_year to scope \
 to one year's filing (e.g. a question about "the 2022 10-K"). Use it for qualitative \
@@ -72,18 +76,30 @@ _TOOLS = [
     {
         "type": "function",
         "function": {
-            "name": "compute_change",
-            "description": "Exact difference and % change of a financial metric "
-            "between two fiscal years, computed from XBRL. Use for ANY change / growth "
-            "/ comparison — do not do the arithmetic yourself.",
+            "name": "compute",
+            "description": "Deterministic financial calculation over the headline metrics "
+            "(all arithmetic is done exactly in code, never by you). Pick an operation:\n"
+            "• over ONE metric across years — change, percent_change, cagr (need metric + "
+            "from_year + to_year); average, sum, min, max (metric; optional from_year/"
+            "to_year, else all years).\n"
+            "• between TWO metrics in ONE year — ratio, percent_of, difference (need "
+            "metric, metric_b, year).\n"
+            "Use this for ANY arithmetic — never compute a number yourself.",
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "operation": {"type": "string", "enum": [
+                        "change", "percent_change", "cagr", "average", "sum", "min",
+                        "max", "ratio", "percent_of", "difference"]},
                     "metric": {"type": "string", "enum": _METRIC_LABELS},
+                    "metric_b": {"type": "string", "enum": _METRIC_LABELS,
+                                 "description": "second metric — ratio/percent_of/difference"},
+                    "year": {"type": "integer",
+                             "description": "the year — ratio/percent_of/difference"},
                     "from_year": {"type": "integer"},
                     "to_year": {"type": "integer"},
                 },
-                "required": ["metric", "from_year", "to_year"],
+                "required": ["operation", "metric"],
             },
         },
     },
@@ -115,20 +131,79 @@ def _money(value: float) -> str:
     return f"{'-' if value < 0 else ''}${millions:,} million"
 
 
-def _tool_compute(table: dict, metric: str, from_year: int, to_year: int) -> str:
-    """Deterministic arithmetic (no LLM math): exact change of a metric between years."""
-    a, b = table.get((metric, from_year)), table.get((metric, to_year))
-    if not a or not b:
-        return f"Cannot compute: missing {metric} for FY{from_year} or FY{to_year}."
-    va, vb, unit = float(a[0]), float(b[0]), a[1]
-    diff = vb - va
-    pct = (diff / va * 100.0) if va else 0.0
-    if unit == "USD":
-        cells = f"FY{from_year}={_money(va)}, FY{to_year}={_money(vb)}, change={_money(diff)}"
-    else:
-        cells = (f"FY{from_year}={va:.2f} {unit}, FY{to_year}={vb:.2f} {unit}, "
-                 f"change={diff:+.2f} {unit}")
-    return f"{metric}: {cells} ({pct:+.1f}%). [exact, computed from XBRL]"
+# compute() operations. SPAN ops run over one metric across years; PAIR ops combine two
+# metrics within one year. Additive results are exact (Decimal); growth/ratios are rounded.
+_SPAN_OPS = {"change", "percent_change", "cagr", "average", "sum", "min", "max"}
+_PAIR_OPS = {"ratio", "percent_of", "difference"}
+
+
+def _fmt(value: Decimal | float, unit: str) -> str:
+    """Format a value with its unit: USD as '$N million', else 2-dp with the unit."""
+    return _money(float(value)) if unit == "USD" else f"{float(value):,.2f} {unit}"
+
+
+def _tool_compute(table: dict, args: dict) -> str:
+    """Deterministic financial calculations over the headline facts — the no-LLM-math
+    tool. Additive results (change/difference/sum/min/max) are exact (`Decimal`); growth
+    and ratios (percent_change/cagr/ratio/percent_of/average) are rounded for display.
+    The model only picks the operation + args; every number is computed here."""
+    op = args.get("operation", "")
+    metric = args.get("metric", "")
+
+    if op in _SPAN_OPS:
+        rows = sorted((fy, v[0], v[1]) for (lbl, fy), v in table.items() if lbl == metric)
+        if not rows:
+            return f"Cannot compute {op}: no facts for {metric!r}."
+        unit = rows[0][2]
+        lo, hi = args.get("from_year"), args.get("to_year")
+        if op in {"change", "percent_change", "cagr"}:
+            a = next((v for fy, v, _u in rows if fy == lo), None)
+            b = next((v for fy, v, _u in rows if fy == hi), None)
+            if a is None or b is None:
+                return f"Cannot compute {op}: need {metric} for both FY{lo} and FY{hi}."
+            if op == "change":
+                return (f"{metric} change FY{lo}->FY{hi}: {_fmt(a, unit)} -> "
+                        f"{_fmt(b, unit)} = {_fmt(b - a, unit)}. [exact, from XBRL]")
+            if op == "percent_change":
+                pct = float(b - a) / float(a) * 100 if a else 0.0
+                return f"{metric} % change FY{lo}->FY{hi}: {pct:+.1f}%. [computed from XBRL]"
+            n = hi - lo  # cagr
+            if n <= 0 or a <= 0:
+                return "Cannot compute CAGR: need to_year > from_year and a positive base."
+            cagr = ((float(b) / float(a)) ** (1.0 / n) - 1.0) * 100
+            return f"{metric} CAGR FY{lo}->FY{hi} ({n}y): {cagr:+.1f}%/yr. [computed from XBRL]"
+        sel = [(fy, v) for fy, v, _u in rows
+               if (lo is None or fy >= lo) and (hi is None or fy <= hi)]
+        if not sel:
+            return f"Cannot compute {op}: no {metric} in the requested range."
+        span = f"FY{sel[0][0]}-FY{sel[-1][0]}"
+        if op == "sum":
+            return f"{metric} sum {span}: {_fmt(sum(v for _, v in sel), unit)}. [exact, from XBRL]"
+        if op == "average":
+            avg = sum(v for _, v in sel) / Decimal(len(sel))
+            return f"{metric} average {span} ({len(sel)}y): {_fmt(avg, unit)}. [computed from XBRL]"
+        fy, v = (min if op == "min" else max)(sel, key=lambda t: t[1])
+        return f"{metric} {op} {span}: {_fmt(v, unit)} (FY{fy}). [exact, from XBRL]"
+
+    if op in _PAIR_OPS:
+        metric_b, year = args.get("metric_b", ""), args.get("year")
+        a, b = table.get((metric, year)), table.get((metric_b, year))
+        if not a or not b:
+            return f"Cannot compute {op}: need {metric} and {metric_b} for FY{year}."
+        (va, ua), (vb, ub) = a, b
+        if op == "difference":
+            if ua != ub:
+                return f"Cannot subtract {metric} ({ua}) and {metric_b} ({ub}): different units."
+            return (f"{metric} - {metric_b} (FY{year}): {_fmt(va, ua)} - {_fmt(vb, ub)} "
+                    f"= {_fmt(va - vb, ua)}. [exact, from XBRL]")
+        if not vb:
+            return f"Cannot compute {op}: {metric_b} is zero in FY{year}."
+        ratio = float(va) / float(vb)
+        if op == "ratio":
+            return f"{metric} / {metric_b} (FY{year}): {ratio:.3f}. [computed from XBRL]"
+        return f"{metric} as % of {metric_b} (FY{year}): {ratio * 100:.1f}%. [computed from XBRL]"
+
+    return f"Unknown operation: {op!r}."
 
 
 def _tool_lookup_fact(table: dict, metric: str, fiscal_year: int | None = None) -> str:
@@ -156,12 +231,13 @@ def _tool_search(
 
 
 def _validate(answer_text: str, tool_outputs: list[str], table: dict) -> dict[str, Any]:
-    """Groundedness check: every comma-formatted number in the answer must be either a
-    headline XBRL value or present in the tool outputs (an exact fact or a compute_change
-    result). Flags any that aren't — a guard against a hallucinated *or hand-computed*
-    figure (the latter is why the agent must use compute_change, not LLM arithmetic).
+    """Groundedness check: every financial figure in the answer — a comma-grouped amount
+    ($4,002,814), a decimal / per-share value (19.75), or a percentage (18.2%) — must be
+    either a headline XBRL value or present in the tool outputs (an exact fact or a
+    `compute` result). Flags any that aren't — a guard against a hallucinated *or
+    hand-computed* figure. (Bare integers like years/pages are intentionally not checked.)
     """
-    stated = set(re.findall(r"\d{1,3}(?:,\d{3})+", answer_text))
+    stated = set(re.findall(r"\d{1,3}(?:,\d{3})+%?|\d+\.\d+%?|\d+%", answer_text))
     evidence = "\n".join(tool_outputs)
     known = {
         f"{int(value) // 1_000_000:,}"
@@ -205,10 +281,8 @@ def _tool_loop(
             trace.append({"tool": name, "args": args})
             if name == "lookup_financial_fact":
                 result = _tool_lookup_fact(table, args.get("metric", ""), args.get("fiscal_year"))
-            elif name == "compute_change":
-                result = _tool_compute(
-                    table, args.get("metric", ""), args.get("from_year"), args.get("to_year")
-                )
+            elif name == "compute":
+                result = _tool_compute(table, args)
             elif name == "search_filings":
                 result, hits = _tool_search(
                     args.get("query", ""), fiscal_year=args.get("fiscal_year")

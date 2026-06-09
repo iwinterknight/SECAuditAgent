@@ -14,7 +14,7 @@ is for recall, DuckDB is for truth."*
 | Kind | embedded OLAP **SQL** engine | embedded **vector** database |
 | Holds | XBRL facts as typed rows | sub-chunk embeddings + payload |
 | Answers | *exact* keyed lookup (entity+concept+period) | *fuzzy* dense nearest-neighbor + filters |
-| Serves | `lookup_financial_fact`, `compute_change` | `search_filings` (dense side) |
+| Serves | `lookup_financial_fact`, `compute` | `search_filings` (dense side) |
 
 Numbers must be **exact** (a keyed/relational problem → SQL); narrative is **meaning-based**
 (approximate recall → vectors). Keeping them in separate stores is the §1.2 firewall made
@@ -79,7 +79,7 @@ an answer-quality jump — and the eval proves the swap cost nothing.
 ## End-to-end (both stores in one answer)
 
 > *"How did total assets change from 2021 to 2025, and what does the filing say about capital
-> strength?"* → `compute_change` (**DuckDB**: +$681,333M, 18.2%, exact 3,743,567 → 4,424,900)
+> strength?"* → `compute` (**DuckDB**: +$681,333M, 18.2%, exact 3,743,567 → 4,424,900)
 > + `search_filings` (**Qdrant**: capital-governance narrative, cited FY2021–2025). Validator:
 > every figure grounded. The firewall, the two stores, and the agent — working together.
 

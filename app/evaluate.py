@@ -67,7 +67,9 @@ GOLDEN: list[dict[str, Any]] = [
      "kind": "numeric", "expect_number": "19.75", "expect_tool": "lookup_financial_fact"},
     # Cross-year arithmetic (deterministic calc tool).
     {"id": "deposits_change", "q": "How did total deposits change from 2021 to 2025?",
-     "kind": "numeric", "expect_number": "2,559,320", "expect_tool": "compute_change"},
+     "kind": "numeric", "expect_number": "2,559,320", "expect_tool": "compute"},
+    {"id": "avg_assets", "q": "What is JPMorgan's average total assets across FY2021-2025?",
+     "kind": "numeric", "expect_number": "3,942,483", "expect_tool": "compute"},
     # Narrative (year-agnostic — retrieves across all years).
     {"id": "risk_factors", "q": "What does JPMorgan identify as key risk factors?",
      "kind": "narrative", "expect_keywords": ["risk"], "expect_tool": "search_filings"},
@@ -113,8 +115,9 @@ def _judge(client: OpenAI, question: str, context: str, answer: str) -> dict[str
 
 _TRAJECTORY_JUDGE = (
     "You grade an AI agent's TOOL-USE TRAJECTORY (how it worked, not just its final "
-    "answer). The agent has two tools: lookup_financial_fact (exact XBRL figures) and "
-    "search_filings (narrative retrieval). Given the QUESTION, the ordered TRAJECTORY of "
+    "answer). The agent has three tools: lookup_financial_fact (exact XBRL figures), "
+    "compute (deterministic calculations over those figures), and search_filings "
+    "(narrative retrieval). Given the QUESTION, the ordered TRAJECTORY of "
     "tool calls, the TOOL OUTPUTS, and the ANSWER, rate each 0.0-1.0:\n"
     "- tool_appropriateness: were the right tools chosen for this question?\n"
     "- efficiency: was the trajectory free of redundant or wasteful calls?\n"

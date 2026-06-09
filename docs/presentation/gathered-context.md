@@ -79,7 +79,7 @@ Compose into a presentation-ready summary with `/collate`.
 
 ### [10] How a query fires against both stores via the agent
 - **Category:** agent
-- **Fact:** The agent is an OpenAI tool-calling loop (`tool_choice="auto"`, temp 0, ≤4 steps). Per question it routes: a **number** → `lookup_financial_fact` / `compute_change` → **DuckDB** (exact SQL); **narrative** → `search_filings` → hybrid retrieval over **Qdrant** + BM25. Multiple tools can fire across steps, then a Self-RAG reflect→revise pass, then a validator checks every figure.
+- **Fact:** The agent is an OpenAI tool-calling loop (`tool_choice="auto"`, temp 0, ≤4 steps). Per question it routes: a **number** → `lookup_financial_fact` / `compute` → **DuckDB** (exact SQL); **narrative** → `search_filings` → hybrid retrieval over **Qdrant** + BM25. Multiple tools can fire across steps, then a Self-RAG reflect→revise pass, then a validator checks every figure.
 - **Insight:** The two stores are never queried "blindly together" — the agent decides which store each sub-question needs; numbers and narrative stay separated (the firewall) until the final answer.
 - **Sayable:** "The agent routes each sub-question — numbers to DuckDB via SQL, narrative to Qdrant via hybrid search — then a validator checks every figure."
 - **Cluster:** Build & retrieval internals

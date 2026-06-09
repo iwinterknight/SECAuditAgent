@@ -11,7 +11,7 @@ absent, never plausibly wrong.** Pulling the thread through the system:
 | Layer | The fidelity mechanism |
 |---|---|
 | Contracts (01) | `XBRLFact` defined + constructed in *one* place; `Decimal` not `float`; period-blend rejected at construction; entity kept distinct |
-| Agent (03) | numbers only from `lookup_financial_fact`; arithmetic only via `compute_change`; refuse when no tool can answer |
+| Agent (03) | numbers only from `lookup_financial_fact`; arithmetic only via `compute`; refuse when no tool can answer |
 | Validator (03) | deterministic check: every stated number must trace to a tool output |
 | Eval (04) | `numeric_exact`, `validator_pass`, `groundedness`, `faithfulness` all measure fidelity directly |
 
