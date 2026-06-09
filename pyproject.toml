@@ -21,6 +21,18 @@ dependencies = [
     "pydantic-settings",
 ]
 
+[project.optional-dependencies]
+# The demo serving layer (app/): agentic RAG + evaluation + Streamlit UI + the two
+# embedded stores. Separate from the M1 ingestion core so the parse/extract path stays lean.
+demo = [
+    "openai",
+    "streamlit",
+    "rank-bm25",
+    "numpy",
+    "duckdb",
+    "qdrant-client",
+]
+
 [dependency-groups]
 dev = ["pytest"]
 

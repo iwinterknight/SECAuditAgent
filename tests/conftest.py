@@ -11,12 +11,20 @@ Later tasks add corpus fixtures here: accession→path fixtures derived from
 expensive parse runs once (T4, T6).
 """
 
+import sys
+from pathlib import Path
+
 import pytest
 
 from config.schema import Element, XBRLFact
 from config.settings import Filing, Settings, get_settings
 from ingestion.elements import parse_elements
 from ingestion.xbrl import extract_facts
+
+# app/ is the demo serving layer — not a packaged module like config/ingestion (which the
+# editable install resolves), so put it on sys.path here so the app-component tests can
+# import retrieval/answer/duckdb_store/vector_store exactly as the app entrypoints do.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 # The FY2022 filing — its FY2022 figures are reported a second time, restated, as
 # comparatives in the FY2024 filing. Paired with the FY2024 facts to prove the
