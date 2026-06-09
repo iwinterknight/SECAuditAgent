@@ -189,5 +189,5 @@ with eval_tab:
                     }
                     for it in report["items"]
                 ],
-                use_container_width=True,
+                width="stretch",
             )
