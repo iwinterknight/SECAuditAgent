@@ -105,8 +105,9 @@ data/derived/ingestion/
   embeddings/ <accession>.npy        # dense vectors, built lazily by retrieval
 ```
 
-Final clean corpus (5 filings): **17,009 Elements** — FY2021 4,032 · FY2022 4,863 ·
-FY2023 5,094 · FY2024 5,111 · FY2025 4,847 — plus ~7,000–7,400 XBRL facts per filing.
+Final clean corpus (5 filings): **23,947 parsed Elements** (FY2021 4,032 · FY2022 4,863 ·
+FY2023 5,094 · FY2024 5,111 · FY2025 4,847), of which **17,009 are indexed for retrieval**
+after dropping sub-40-character fragments — plus **36,046 XBRL facts** (~7.0–7.4k per filing).
 This directory is **gitignored** but **baked into the Docker image** (doc 05): the
 container serves it, never rebuilds it.
 

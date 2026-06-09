@@ -2,11 +2,11 @@
   "numeric_exact": 1.0,
   "tool_accuracy": 1.0,
   "retrieval_hit_rate": 1.0,
-  "groundedness": 1.0,
-  "answer_relevance": 0.988,
+  "groundedness": 0.994,
+  "answer_relevance": 1.0,
   "validator_pass_rate": 1.0,
   "tool_appropriateness": 0.938,
-  "trajectory_efficiency": 0.881,
-  "answer_faithfulness": 1.0,
+  "trajectory_efficiency": 0.95,
+  "answer_faithfulness": 0.994,
   "year_scope_accuracy": 1.0
 }
