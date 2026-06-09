@@ -46,8 +46,11 @@ So the `Dockerfile` is deliberately lean:
 
 ```dockerfile
 FROM python:3.13-slim
-# runtime deps ONLY — note what's absent: no docling, no arelle, no torch
-RUN pip install --no-cache-dir streamlit openai rank-bm25 numpy pydantic pydantic-settings
+# runtime deps ONLY — note what's absent: no docling, no arelle, no torch.
+# duckdb + qdrant-client are the two *embedded* stores (no server) — built from the
+# baked corpus at startup (doc 07).
+RUN pip install --no-cache-dir \
+    streamlit openai rank-bm25 numpy pydantic pydantic-settings duckdb qdrant-client
 
 # only the light modules the app imports …
 COPY src/config /srv/src/config
@@ -71,6 +74,9 @@ Why this matters:
 - **The embeddings are baked too** — the `.npy` caches ship in the image, so the
   container never re-embeds the *corpus*; it only embeds each *query* at request time
   (which is why it still needs the OpenAI key at runtime).
+- **The stores are built at startup, embedded** — DuckDB loads the facts JSONL and Qdrant
+  loads the sub-chunk `.npy` **in-process** (no server, ~15 s on first use), so the
+  two-store architecture (doc 07) keeps the single-container model intact.
 - `.dockerignore` keeps the build context tiny — it drops `.venv`, `.git`, `data/SEC`
   (raw filings), `tests`, `docs`, `reports`, and **`.env`** (the key is never baked).
 
@@ -84,5 +90,9 @@ docker build -t jpm-10k-demo .
 docker run --rm -p 8501:8501 --env-file .env jpm-10k-demo
 # → open http://localhost:8501
 ```
+
+**Verified:** the image builds, the container serves (`/_stcore/health` → HTTP 200), and
+both embedded stores work in-container (`load_corpus` → DuckDB 17,009 Elements / 5 FY;
+`build_index` → Qdrant 17,009).
 
 → Next: [06 · Decisions & lessons](06-decisions-and-lessons.md) — the why behind the how.

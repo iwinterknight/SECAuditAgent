@@ -47,6 +47,8 @@ evaluated demo. Knowing *when* to apply rigor and when to move is itself the les
 | Self-correction | **one** reflect→revise pass | catches most gaps; bounded so latency/cost stay predictable |
 | Eval judges | LLM-as-judge + deterministic | judges scale to open-ended answers; determinism anchors the bedrock metrics |
 | Deployment | **bake once, serve** | lean, reproducible image; cost is the corpus is a fixed artifact (rebuild offline to refresh) |
+| Chunking | **structure-based sub-chunks** | the parser's blocks are the chunks; long ones split (tables row-wise w/ header) so nothing is truncated out of the embedding (docs 02, 07) |
+| Stores | **DuckDB + Qdrant, embedded** | the designed two-store split, in-process: numbers→SQL truth, narrative→vector recall; no server, single-container kept (doc 07) |
 
 ## War stories (the genuinely instructive failures)
 
@@ -74,14 +76,21 @@ evaluated demo. Knowing *when* to apply rigor and when to move is itself the les
   filter) is often what finally exposes a latent bug. It also shows the eval's value:
   `year_scope_accuracy` is exactly the metric that would have caught it.
 
+- **The 800-char embedding truncation.** The dense index embedded only each Element's
+  *first 800 chars*, so a 7.2k-char table was ~89% invisible to its own vector. Fix:
+  structure-based **sub-chunks** (tables row-wise, header repeated), scored by best
+  sub-chunk (docs 02, 07). *Lesson:* a silent retrieval weakness found by **measuring**
+  (max table length vs the cap), fixed with **no regression** — the eval gate confirmed it.
+
 ## What's deferred (honest edges)
 
 - **Semantic sections.** `item` comes from filing boundaries; finer semantic sectioning
   (e.g. splitting Item 15 / Exhibit 13's MD&A into sub-topics) is logged as follow-up.
 - **More headline metrics.** The facts table is 8 metrics; broadening numeric coverage
   is "add rows," not new architecture.
-- **A learned reranker / persistent vector store.** RRF + per-filing `.npy` is right for
-  this scale; a larger corpus would justify a reranker and a real vector DB.
+- **A learned reranker.** RRF is right for this scale; a larger corpus would justify a
+  cross-encoder reranker after fusion. *(The vector store — **Qdrant** — and the SQL fact
+  store — **DuckDB** — are now integrated, embedded; see [07 · The stores](07-stores.md).)*
 - **Larger golden set.** 16 items covers every year and every behavior (numeric,
   cross-year, year-scoped narrative, refusal); more items would tighten the statistics.
 

@@ -16,9 +16,9 @@ facts *or* call the change tool. That routing is the agent's job.
 
 | Tool | What it returns | Backed by |
 |---|---|---|
-| `lookup_financial_fact(metric, fiscal_year?)` | the **exact** XBRL figure(s) | the headline facts table (doc 01) |
-| `compute_change(metric, from_year, to_year)` | exact **difference + % change** | deterministic arithmetic in Python |
-| `search_filings(query, fiscal_year?)` | narrative passages, FY+page tagged | hybrid retrieval (doc 02) |
+| `lookup_financial_fact(metric, fiscal_year?)` | the **exact** XBRL figure(s) | the **DuckDB** facts store (docs 01, 07) |
+| `compute_change(metric, from_year, to_year)` | exact **difference + % change** | deterministic arithmetic in Python (over DuckDB facts) |
+| `search_filings(query, fiscal_year?)` | narrative passages, FY+page tagged | hybrid: **Qdrant** dense + BM25 (docs 02, 07) |
 
 Two design rules are encoded in the system prompt **and** the code:
 

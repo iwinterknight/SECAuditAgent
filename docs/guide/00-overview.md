@@ -46,6 +46,11 @@ This is the spine of the whole system. Everything else serves it.
                                                   set (triad + trajectory + drift/regression).
 ```
 
+> **Where the stores fit:** at serving time the baked `*.jsonl` + `*.npy` are loaded
+> **in-process** into the two embedded stores the tools query — **DuckDB** for the exact
+> XBRL facts, **Qdrant** for the sub-chunk vectors (alongside BM25) — so the JSONL stays
+> the source of truth and there's still no server. See [07 · The stores](07-stores.md).
+
 ## Two layers (why it's structured this way)
 
 - **Offline ingestion (parse once).** Parsing a 300-page PDF with ML layout/table
@@ -64,7 +69,8 @@ Arelle, or torch at runtime).
 | Block | Module | One-liner |
 |---|---|---|
 | Ingestion | `src/ingestion/*` | PDFs + XBRL → the corpus (doc 01) |
-| Retrieval | `app/retrieval.py` | hybrid dense+sparse search, parent-expansion, year filter (doc 02) |
+| Retrieval | `app/retrieval.py` | hybrid **Qdrant** dense + BM25 sparse, RRF, parent-expansion, year filter (docs 02, 07) |
+| Stores | `app/duckdb_store.py`, `app/vector_store.py` | **DuckDB** (facts) + **Qdrant** (sub-chunk vectors), embedded, built from the baked JSONL/`.npy` at startup (doc 07) |
 | Agent | `app/agent.py` | 3-tool loop + validator + self-correction (doc 03) |
 | Evaluation | `app/evaluate.py` | golden set, triad, trajectory, drift/regression (doc 04) |
 | UI / Docker | `app/ui.py`, `Dockerfile` | Streamlit chat + dashboard, baked image (doc 05) |
